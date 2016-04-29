@@ -4,7 +4,7 @@
 
 You need the WildFly Swarm examples. Make sure they a refully build.
 
-## Building th testdriver
+## Building the test driver
 
 Build the top level project first:
 
