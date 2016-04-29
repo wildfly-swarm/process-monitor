@@ -27,7 +27,7 @@ create the test summary at `target/perf.csv`
 The actual result file is a simple CSV document:
 
 ```
-ile,Name,Measurements,Min,Max,.75
+File,Name,Measurements,Min,Max,.75
 /Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/datasource/datasource-subsystem/target/example-datasource-subsystem-swarm.jar,example-datasource-subsystem-swarm.jar,10,4918.0,6544.0,6307.75
 /Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-war/target/example-jpa-jaxrs-cdi-war-swarm.jar,example-jpa-jaxrs-cdi-war-swarm.jar,10,8422.0,9735.0,9607.75
 /Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-shrinkwrap/target/example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,10,8136.0,9403.0,9274.0
