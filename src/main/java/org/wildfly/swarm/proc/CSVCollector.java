@@ -42,7 +42,6 @@ public class CSVCollector extends AbstractCollectorBase {
         sb.append("Min").append(SEP);
         sb.append("Max").append(SEP);
         sb.append(".75");
-        sb.append(NEWLINE);
 
         PrintWriter writer = new PrintWriter(file, "UTF-8");
         writer.println(sb.toString());

@@ -111,9 +111,9 @@ public class Monitor {
 
     }
 
-    private static final int NUM_CONNECTION_ATTEMPTS = 5;
+    private static final int NUM_CONNECTION_ATTEMPTS = 8;
 
-    private static final int MS_BETWEEN_ATTEMPTS = 1000;
+    private static final int MS_BETWEEN_ATTEMPTS = 1500;
 
     private static final int NUM_ITERATIONS = 10;
 }
