@@ -2,6 +2,9 @@ package org.wildfly.swarm.proc;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
@@ -59,9 +62,7 @@ public class CSVCollector extends AbstractCollectorBase {
         sb.append(NEWLINE);
 
         try {
-            PrintWriter writer = new PrintWriter(file, "UTF-8");
-            writer.println(sb.toString());
-            writer.close();
+            Files.write(Paths.get(file.getAbsolutePath()), sb.toString().getBytes(), StandardOpenOption.APPEND);
         } catch (Exception e) {
             throw new RuntimeException("Faile to write data", e);
         }
