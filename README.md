@@ -40,6 +40,6 @@ ile,Name,Measurements,Min,Max,.75
 If vou put that into a spread however, it should be straightforward to compare performance baselines of 
 the different WildFly Swarm releases:
 
-(https://github.com/heiko-braun/proc-mon/assets/graph.png)
+<img src="https://raw.githubusercontent.com/heiko-braun/proc-mon/master/assets/graph.png"/>
 
 Have fun.
