@@ -2,7 +2,7 @@
 
 ## Prerequisite
 
-You need the WildFly Swarm examples. Make sure they a refully build.
+You need the WildFly Swarm examples. Make sure they are fully build.
 
 ## Building the test driver
 
@@ -37,7 +37,7 @@ File,Name,Measurements,Min,Max,.75
 /Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jaxrs/jaxrs-war/target/example-jaxrs-war-swarm.jar,example-jaxrs-war-swarm.jar,10,4850.0,5886.0,5777.75
 ```
 
-If vou put that into a spread however, it should be straightforward to compare performance baselines of 
+If you put that into a spread sheet it should be straightforward to compare performance baselines of 
 the different WildFly Swarm releases:
 
 <img src="https://raw.githubusercontent.com/heiko-braun/proc-mon/master/assets/graph.png"/>
