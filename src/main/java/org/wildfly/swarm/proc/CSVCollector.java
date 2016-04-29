@@ -38,7 +38,8 @@ public class CSVCollector extends AbstractCollectorBase {
 
         StringBuffer sb = new StringBuffer();
         sb.append("File").append(SEP);
-        sb.append("Measurement").append(SEP);
+        sb.append("Name").append(SEP);
+        sb.append("Measurements").append(SEP);
         sb.append("Min").append(SEP);
         sb.append("Max").append(SEP);
         sb.append(".75");
@@ -54,6 +55,7 @@ public class CSVCollector extends AbstractCollectorBase {
 
         StringBuffer sb = new StringBuffer();
         sb.append(id).append(SEP);
+        sb.append(id.substring(id.lastIndexOf("/")+1, id.length())).append(SEP);
         sb.append(stats.getValues().length).append(SEP);
         sb.append(stats.getMin()).append(SEP);
         sb.append(stats.getMax()).append(SEP);
