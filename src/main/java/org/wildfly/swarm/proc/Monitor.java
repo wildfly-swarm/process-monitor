@@ -18,7 +18,7 @@ public class Monitor {
     public static void main(String[] args) throws Exception {
 
         if(args.length==0) {
-            System.out.println("Usage: Monitor <base-dir>");
+            System.out.println("Usage: Monitor <base-dir> [<output>]");
             System.exit(-1);
 
         }
@@ -30,6 +30,7 @@ public class Monitor {
         props.load(Monitor.class.getClassLoader().getResourceAsStream("swarm-apps.properties"));
 
         long total0 = System.currentTimeMillis();
+        Collector collector = args.length>1 ? new CSVCollector(new File(args[1])) : new SystemOutCollector();
 
         // main test execution loop
         for (Object o : props.keySet()) {
@@ -41,8 +42,6 @@ public class Monitor {
 
             if(!file.exists())
                 throw new RuntimeException("File does not exist: "+ file.getAbsolutePath());
-
-            Collector collector = new SystemOutCollector();
 
             collector.onBegin(id);
             for(int i=0;i<NUM_ITERATIONS; i++) {
