@@ -40,12 +40,16 @@ public class CSVCollector extends AbstractCollectorBase {
         sb.append("File").append(SEP);
         sb.append("Name").append(SEP);
 
-        for (Measure m : results.keySet()) {
+        int i=0;
+        for (Measure m : Measure.values()) {
             sb.append(m.name()+" Samples").append(SEP);
             sb.append(m.name()+" Min").append(SEP);
             sb.append(m.name()+" Max").append(SEP);
             sb.append(m.name()+" .75");
 
+            if(i<Measure.values().length-1)
+                sb.append(SEP);
+            i++;
         }
 
         PrintWriter writer = new PrintWriter(file, "UTF-8");
