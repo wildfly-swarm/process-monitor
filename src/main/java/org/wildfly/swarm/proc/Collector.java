@@ -6,6 +6,6 @@ package org.wildfly.swarm.proc;
  */
 interface Collector {
     void onBegin(String id);
-    void onMeasurement(String id, double val);
+    void onMeasurement(String id, Measure measure, double val);
     void onFinish(String id);
 }

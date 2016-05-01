@@ -2,12 +2,16 @@ package org.wildfly.swarm.proc;
 
 import java.io.File;
 import java.util.Properties;
+import java.util.UUID;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.hyperic.sigar.ProcMem;
+import org.hyperic.sigar.Sigar;
+import org.hyperic.sigar.ptql.ProcessFinder;
 
 /**
  * @author Heiko Braun
@@ -58,7 +62,8 @@ public class Monitor {
         System.out.println("Testing "+file.getAbsolutePath());
         String id = file.getAbsolutePath();
 
-        ProcessBuilder pb = new ProcessBuilder("java", "-jar", file.getAbsolutePath()).inheritIO();
+        String uid = UUID.randomUUID().toString();
+        ProcessBuilder pb = new ProcessBuilder("java", "-jar", file.getAbsolutePath(), "-Duid="+ uid, "-d64", "-Xms512m").inheritIO();
         Process process = null;
         boolean escape = false;
         int attempts = 0;
@@ -81,7 +86,9 @@ public class Monitor {
                         escape = true;
                     }
 
-                    collector.onMeasurement(id, new Double(System.currentTimeMillis()-s0));
+                    procInfo(id, uid, collector);
+
+                    collector.onMeasurement(id, Measure.STARTUP_TIME, new Double(System.currentTimeMillis()-s0));
                     escape = true;
                 } catch (HttpHostConnectException e) {
 
@@ -109,6 +116,24 @@ public class Monitor {
                 process.destroyForcibly();
         }
 
+    }
+
+    /**
+     * See https://support.hyperic.com/display/SIGAR/PTQL
+     * @param process
+     * @param file
+     * @throws Exception
+     */
+    private static void procInfo(String id, String uid, Collector collector) throws Exception {
+        Sigar sigar = new Sigar();
+        final ProcessFinder processFinder = new ProcessFinder(sigar);
+        long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.3.ct="+uid);
+
+        ProcMem procMem = sigar.getProcMem(pid);
+        String heapString = Sigar.formatSize(procMem.getResident());
+        System.out.println("PID for test driver: "+ pid);
+        System.out.println("MEM for PID: "+ heapString);
+        collector.onMeasurement(id, Measure.HEAP_AFTER_INVOCATION, Long.valueOf(heapString.substring(0, heapString.length()-1)));  // TODO only works for MB
     }
 
     private static final int NUM_CONNECTION_ATTEMPTS = 8;

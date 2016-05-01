@@ -39,10 +39,14 @@ public class CSVCollector extends AbstractCollectorBase {
         StringBuffer sb = new StringBuffer();
         sb.append("File").append(SEP);
         sb.append("Name").append(SEP);
-        sb.append("Measurements").append(SEP);
-        sb.append("Min").append(SEP);
-        sb.append("Max").append(SEP);
-        sb.append(".75");
+
+        for (Measure m : results.keySet()) {
+            sb.append(m.name()+" Samples").append(SEP);
+            sb.append(m.name()+" Min").append(SEP);
+            sb.append(m.name()+" Max").append(SEP);
+            sb.append(m.name()+" .75");
+
+        }
 
         PrintWriter writer = new PrintWriter(file, "UTF-8");
         writer.println(sb.toString());
@@ -51,15 +55,17 @@ public class CSVCollector extends AbstractCollectorBase {
 
     public void onFinish(String id) {
 
-        DescriptiveStatistics stats = results.get(id);
-
         StringBuffer sb = new StringBuffer();
         sb.append(id).append(SEP);
         sb.append(id.substring(id.lastIndexOf("/")+1, id.length())).append(SEP);
-        sb.append(stats.getValues().length).append(SEP);
-        sb.append(stats.getMin()).append(SEP);
-        sb.append(stats.getMax()).append(SEP);
-        sb.append(stats.getPercentile(75));
+
+        for (Measure m : results.keySet()) {
+            DescriptiveStatistics stats = results.get(m);
+            sb.append(stats.getValues().length).append(SEP);
+            sb.append(stats.getMin()).append(SEP);
+            sb.append(stats.getMax()).append(SEP);
+            sb.append(stats.getPercentile(75));
+        }
         sb.append(NEWLINE);
 
         try {

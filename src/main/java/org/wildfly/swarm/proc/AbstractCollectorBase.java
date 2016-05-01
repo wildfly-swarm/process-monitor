@@ -11,17 +11,17 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
  */
 public abstract class AbstractCollectorBase implements Collector {
 
-    protected Map<String,DescriptiveStatistics> results = new HashMap<String, DescriptiveStatistics>();
+    protected Map<Measure, DescriptiveStatistics> results = new HashMap<Measure, DescriptiveStatistics>();
 
     public void onBegin(String id) {
-        if(!results.containsKey(id))
-            results.put(id, new DescriptiveStatistics());
 
-        results.get(id).clear();
+        results.clear();
     }
 
-    public void onMeasurement(String id, double val) {
-        results.get(id).addValue(val);
+    public void onMeasurement(String id, Measure measure, double val) {
+        if(!results.containsKey(measure))
+            results.put(measure, new DescriptiveStatistics());
+        results.get(measure).addValue(val);
     }
 
     public abstract void onFinish(String id);
