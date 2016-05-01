@@ -2,7 +2,20 @@
 
 ## Prerequisite
 
+### WildFly Swarm Examples
 You need the WildFly Swarm examples. Make sure they are fully build.
+
+### Sigar Installation
+
+Most of the process monitorin is done using sigar. It requires a native library to be present:
+(hyperic-sigar-1.6.4)
+
+```
+-Djava.library.path=$PATH_TO_SIGAR/sigar-bin/lib/
+```
+
+It can be downloaded here:
+https://sourceforge.net/projects/sigar/
 
 ## Building the test driver
 
