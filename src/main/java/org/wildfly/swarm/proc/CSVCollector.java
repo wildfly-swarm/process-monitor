@@ -63,6 +63,7 @@ public class CSVCollector extends AbstractCollectorBase {
         sb.append(id).append(SEP);
         sb.append(id.substring(id.lastIndexOf("/")+1, id.length())).append(SEP);
 
+        int i=0;
         for (Measure m : Measure.values()) {
             if(!results.containsKey(m))
                 throw new RuntimeException("Measurement is missing "+m);
@@ -72,6 +73,10 @@ public class CSVCollector extends AbstractCollectorBase {
             sb.append(stats.getMin()).append(SEP);
             sb.append(stats.getMax()).append(SEP);
             sb.append(stats.getPercentile(75));
+
+            if(i<Measure.values().length-1)
+                sb.append(SEP);
+            i++;
         }
         sb.append(NEWLINE);
 
