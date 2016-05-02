@@ -1,9 +1,18 @@
 package org.wildfly.swarm.proc;
 
 import java.io.File;
+import java.io.FilenameFilter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
+import com.github.zafarkhaja.semver.Version;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.HttpHostConnectException;
@@ -19,29 +28,53 @@ import org.hyperic.sigar.ptql.ProcessFinder;
  */
 public class Monitor {
 
+    public Monitor(File baseDir, File archiveDir, Collector collector) {
+
+        this.baseDir = baseDir;
+        this.archiveDir = archiveDir;
+        this.collector = collector;
+    }
+
     public static void main(String[] args) throws Exception {
 
-        if(args.length==0) {
-            System.out.println("Usage: Monitor <base-dir> [<output>]");
+        if(args.length<2) {
+            System.out.println("Usage: Monitor <base-dir> <archive-dir> [<output>]");
             System.exit(-1);
 
         }
-        String baseDir = args[0];
-        System.out.println("Working on base dir"+ baseDir);
+        File baseDir = new File(args[0]);
+        File archiveDir = new File(args[1]);
+
+        Optional<File> outputDir = args.length>2 ? Optional.of(new File(args[2])) : Optional.empty();
+
+
+        System.out.println("Base dir: "+ baseDir.getAbsolutePath());
+        System.out.println("Archive dir: "+ archiveDir.getAbsolutePath());
+
+        if(!archiveDir.exists())
+            throw new RuntimeException("Archive does not exist: "+archiveDir.getAbsolutePath());
+
+        Collector collector = outputDir.isPresent() ?
+                new CSVCollector(new File(args[2])) : new SystemOutCollector();
+
+        // perform tests
+        new Monitor(baseDir, archiveDir, collector).run();
+
+    }
+
+    private void run() throws Exception {
+        long total0 = System.currentTimeMillis();
 
         // test criteria
         Properties props = new Properties();
         props.load(Monitor.class.getClassLoader().getResourceAsStream("swarm-apps.properties"));
 
-        long total0 = System.currentTimeMillis();
-        Collector collector = args.length>1 ? new CSVCollector(new File(args[1])) : new SystemOutCollector();
-
-        // main test execution loop
+        // first phase: main test execution loop
         for (Object o : props.keySet()) {
             String swarmFile = (String) o;
             String httpCheck = (String) props.get(o);
 
-            File file = new File(baseDir + swarmFile);
+            File file = new File(this.baseDir, swarmFile);
             String id = file.getAbsolutePath();
 
             if(!file.exists())
@@ -54,10 +87,61 @@ public class Monitor {
             collector.onFinish(id);
         }
 
-        System.out.println("Total Exceution Time: "+(System.currentTimeMillis()-total0));
+        System.out.println("Test Execution Time: "+(System.currentTimeMillis()-total0));
+
+        // second phase: compare with previous, archived results
+        Optional<ArchivedResult> prev = getPreviousResults(this.archiveDir);
+        if(prev.isPresent()) {
+            checkDeviation(prev.get());
+        }
+        else {
+            System.out.println("Performance comparison skipped, because archived results not present!");
+        }
     }
 
-    private static void runTest(File file, String httpCheck, final Collector collector) {
+    private void checkDeviation(ArchivedResult archivedResult) {
+        System.out.println("Comparing against " + archivedResult.getVersion());
+
+    }
+
+    private Optional<ArchivedResult> getPreviousResults(File dir) {
+
+        String[] archivedResults = dir.list(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".csv");
+            }
+        });
+
+        Map<Version, File> versions = new HashMap<Version, File>();
+        for (String archivedResult : archivedResults) {
+            File archive = new File(dir, archivedResult);
+            String name = archive.getName();
+            Version v = Version.valueOf(name.substring(0, name.lastIndexOf(".")));
+            versions.put(v, archive);
+        }
+
+        Optional<ArchivedResult> res = Optional.empty();
+
+        if(versions.size()>0) {
+            List<Version> sortedKeys = new ArrayList<Version>(versions.keySet());
+            Collections.sort(sortedKeys, new Comparator<Version>() {
+                public int compare(Version v1, Version v2) {
+                    return v1.compareTo(v2);
+                }
+            });
+
+            sortedKeys.forEach( k -> System.out.println(k));
+
+            Version key = sortedKeys.get(sortedKeys.size() - 1);
+            res = Optional.of(
+                    new ArchivedResult(key, versions.get(key))
+            );
+        }
+
+        return res;
+    }
+
+    private void runTest(File file, String httpCheck, final Collector collector) {
 
         System.out.println("Testing "+file.getAbsolutePath());
         String id = file.getAbsolutePath();
@@ -127,7 +211,7 @@ public class Monitor {
      * @param file
      * @throws Exception
      */
-    private static void procInfo(String id, String uid, Collector collector) throws Exception {
+    private void procInfo(String id, String uid, Collector collector) throws Exception {
         Sigar sigar = new Sigar();
         final ProcessFinder processFinder = new ProcessFinder(sigar);
         long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.3.ct="+uid);
@@ -143,5 +227,29 @@ public class Monitor {
 
     private static final int MS_BETWEEN_ATTEMPTS = 100;
 
-    private static final int NUM_ITERATIONS = 10;
+    private static final int NUM_ITERATIONS = 1;
+
+    private final File baseDir;
+
+    private final File archiveDir;
+
+    private final Collector collector;
+
+    class ArchivedResult {
+        private Version version;
+        private File file;
+
+        public ArchivedResult(Version version, File file) {
+            this.version = version;
+            this.file = file;
+        }
+
+        public Version getVersion() {
+            return version;
+        }
+
+        public File getFile() {
+            return file;
+        }
+    }
 }
