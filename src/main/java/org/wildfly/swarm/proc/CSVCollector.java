@@ -42,10 +42,10 @@ public class CSVCollector extends AbstractCollectorBase {
 
         int i=0;
         for (Measure m : Measure.values()) {
-            sb.append(m.name()+" Samples").append(SEP);
-            sb.append(m.name()+" Min").append(SEP);
-            sb.append(m.name()+" Max").append(SEP);
-            sb.append(m.name()+" .75");
+            sb.append(m.getShortName()+" Samples").append(SEP);
+            sb.append(m.getShortName()+" Min").append(SEP);
+            sb.append(m.getShortName()+" Max").append(SEP);
+            sb.append(m.getShortName()+" .75");
 
             if(i<Measure.values().length-1)
                 sb.append(SEP);
@@ -63,7 +63,10 @@ public class CSVCollector extends AbstractCollectorBase {
         sb.append(id).append(SEP);
         sb.append(id.substring(id.lastIndexOf("/")+1, id.length())).append(SEP);
 
-        for (Measure m : results.keySet()) {
+        for (Measure m : Measure.values()) {
+            if(!results.containsKey(m))
+                throw new RuntimeException("Measurement is missing "+m);
+
             DescriptiveStatistics stats = results.get(m);
             sb.append(stats.getValues().length).append(SEP);
             sb.append(stats.getMin()).append(SEP);

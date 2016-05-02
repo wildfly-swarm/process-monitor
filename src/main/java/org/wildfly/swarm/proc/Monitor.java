@@ -92,10 +92,10 @@ public class Monitor {
                     escape = true;
                 } catch (HttpHostConnectException e) {
 
-                    System.err.println(e.getMessage());
+                    //System.err.println(e.getMessage());
 
                     if(attempts < NUM_CONNECTION_ATTEMPTS) {
-                        System.err.println("Schedule retry ...");
+                        System.err.println("Failed to connect. Scheduling retry ...");
                         Thread.sleep(MS_BETWEEN_ATTEMPTS);
                         attempts++;
                     }
@@ -136,9 +136,9 @@ public class Monitor {
         collector.onMeasurement(id, Measure.HEAP_AFTER_INVOCATION, Long.valueOf(heapString.substring(0, heapString.length()-1)));  // TODO only works for MB
     }
 
-    private static final int NUM_CONNECTION_ATTEMPTS = 8;
+    private static final int NUM_CONNECTION_ATTEMPTS = 200;
 
-    private static final int MS_BETWEEN_ATTEMPTS = 1500;
+    private static final int MS_BETWEEN_ATTEMPTS = 100;
 
     private static final int NUM_ITERATIONS = 10;
 }
