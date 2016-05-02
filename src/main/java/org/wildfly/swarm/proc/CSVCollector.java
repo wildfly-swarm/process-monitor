@@ -42,10 +42,10 @@ public class CSVCollector extends AbstractCollectorBase {
 
         int i=0;
         for (Measure m : Measure.values()) {
-            sb.append(m.getShortName()+" Samples").append(SEP);
-            sb.append(m.getShortName()+" Min").append(SEP);
-            sb.append(m.getShortName()+" Max").append(SEP);
-            sb.append(m.getShortName()+" .75");
+            sb.append(m.getShortName()+ SAMPLES).append(SEP);
+            sb.append(m.getShortName()+ MIN).append(SEP);
+            sb.append(m.getShortName()+ MAX).append(SEP);
+            sb.append(m.getShortName()+ PERCENTILE);
 
             if(i<Measure.values().length-1)
                 sb.append(SEP);
@@ -86,6 +86,18 @@ public class CSVCollector extends AbstractCollectorBase {
             throw new RuntimeException("Faile to write data", e);
         }
     }
+
+    public static final String SAMPLES = " Samples";
+
+    public static final String MIN = " Min";
+
+    public static final String MAX = " Max";
+
+    public static final String PERCENTILE = " .75";
+
+    public static int STARTUP_PERCENTILE_IDX = 5;
+    public static int MEM_PERCENTILE_IDX = 9;
+    public static int FILE_NAME_IDX = 1;
 
     private final File file;
 }

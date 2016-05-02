@@ -1,11 +1,14 @@
 package org.wildfly.swarm.proc;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FilenameFilter;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +16,9 @@ import java.util.Properties;
 import java.util.UUID;
 
 import com.github.zafarkhaja.semver.Version;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.HttpHostConnectException;
@@ -28,10 +34,11 @@ import org.hyperic.sigar.ptql.ProcessFinder;
  */
 public class Monitor {
 
-    public Monitor(File baseDir, File archiveDir, Collector collector) {
+    public Monitor(File baseDir, File archiveDir, Optional<File> outputFile, Collector collector) {
 
         this.baseDir = baseDir;
         this.archiveDir = archiveDir;
+        this.outputFile = outputFile;
         this.collector = collector;
     }
 
@@ -45,8 +52,7 @@ public class Monitor {
         File baseDir = new File(args[0]);
         File archiveDir = new File(args[1]);
 
-        Optional<File> outputDir = args.length>2 ? Optional.of(new File(args[2])) : Optional.empty();
-
+        Optional<File> output = args.length>2 ? Optional.of(new File(args[2])) : Optional.empty();
 
         System.out.println("Base dir: "+ baseDir.getAbsolutePath());
         System.out.println("Archive dir: "+ archiveDir.getAbsolutePath());
@@ -54,11 +60,11 @@ public class Monitor {
         if(!archiveDir.exists())
             throw new RuntimeException("Archive does not exist: "+archiveDir.getAbsolutePath());
 
-        Collector collector = outputDir.isPresent() ?
-                new CSVCollector(new File(args[2])) : new SystemOutCollector();
+        Collector collector = output.isPresent() ?
+                new CSVCollector(output.get()) : new SystemOutCollector();
 
         // perform tests
-        new Monitor(baseDir, archiveDir, collector).run();
+        new Monitor(baseDir, archiveDir, output, collector).run();
 
     }
 
@@ -91,17 +97,28 @@ public class Monitor {
 
         // second phase: compare with previous, archived results
         Optional<ArchivedResult> prev = getPreviousResults(this.archiveDir);
-        if(prev.isPresent()) {
-            checkDeviation(prev.get());
+        if(prev.isPresent() && (collector instanceof CSVCollector )) { // limited to CSV files
+            checkDeviation(this.outputFile.get(), prev.get());
         }
         else {
-            System.out.println("Performance comparison skipped, because archived results not present!");
+            System.out.println("Performance comparison skipped.");
         }
     }
 
-    private void checkDeviation(ArchivedResult archivedResult) {
+    private void checkDeviation(File testResult, ArchivedResult archivedResult) throws Exception {
         System.out.println("Comparing against " + archivedResult.getVersion());
 
+        List<CSVRecord> current = loadCSV(testResult).getRecords();
+        List<CSVRecord> previous = loadCSV(archivedResult.getFile()).getRecords();
+
+        new FailFastComparator(10.00).compare(previous, current);
+    }
+
+
+    private CSVParser loadCSV(File file) throws Exception {
+        Reader in = new FileReader(file);
+        CSVParser parser = CSVFormat.DEFAULT.parse(in);
+        return parser;
     }
 
     private Optional<ArchivedResult> getPreviousResults(File dir) {
@@ -227,11 +244,13 @@ public class Monitor {
 
     private static final int MS_BETWEEN_ATTEMPTS = 100;
 
-    private static final int NUM_ITERATIONS = 1;
+    private static final int NUM_ITERATIONS = 10;
 
     private final File baseDir;
 
     private final File archiveDir;
+
+    private final Optional<File> outputFile;
 
     private final Collector collector;
 
