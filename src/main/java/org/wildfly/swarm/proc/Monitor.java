@@ -73,10 +73,12 @@ public class Monitor {
             final long s0 = System.currentTimeMillis();
             process = pb.start();
 
+            final CloseableHttpClient httpClient = HttpClients.createDefault();
+
             do {
 
                 try {
-                    CloseableHttpClient httpClient = HttpClients.createDefault();
+
                     HttpGet request = new HttpGet(httpCheck);
 
                     CloseableHttpResponse response = httpClient.execute(request);
@@ -106,6 +108,7 @@ public class Monitor {
                 }
             } while(!escape);
 
+            httpClient.close();
             process.destroy();
 
         } catch (Throwable t) {
