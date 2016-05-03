@@ -1,8 +1,13 @@
 package org.wildfly.swarm.proc;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author Heiko Braun
@@ -12,41 +17,98 @@ public class FailFastComparator implements DeviationComparator {
 
     private final double threshold;
 
+    private final Map<Measure, Integer> criteria = new HashMap<>();
+
     public FailFastComparator(double threshold) {
         this.threshold = threshold;
+
+        criteria.put(Measure.HEAP_AFTER_INVOCATION, CSVCollector.MEM_PERCENTILE_IDX);
+        criteria.put(Measure.STARTUP_TIME, CSVCollector.STARTUP_PERCENTILE_IDX);
     }
 
     @Override
     public void compare(List<CSVRecord> previous, List<CSVRecord> current) throws ThresholdExceeded {
         boolean skipedFirst = false;
+        List<ComparisonResult> comparisonResults = new ArrayList<>();
+        int maxChars = 0;
         for (CSVRecord prevRecord : previous) {
             if(!skipedFirst) { // CSV headers
                 skipedFirst = true;
                 continue;
             }
             String fileName = prevRecord.get(CSVCollector.FILE_NAME_IDX);
+            if(fileName.length()>maxChars) maxChars = fileName.length();
             CSVRecord matching = findMatching(fileName, current);
             if(matching!=null) {
-                double prevVal = Double.valueOf(prevRecord.get(CSVCollector.STARTUP_PERCENTILE_IDX));
-                double currVal = Double.valueOf(matching.get(CSVCollector.STARTUP_PERCENTILE_IDX));
 
-                if(currVal>prevVal) {
+                for (Measure measure : criteria.keySet()) {
+                    int idx = criteria.get(measure);
+                    double prevVal = Double.valueOf(prevRecord.get(idx));
+                    double currVal = Double.valueOf(matching.get(idx));
 
-                    double increasePercentage = currVal*100/prevVal;
-                    boolean failed = increasePercentage-threshold > 100;
-                    if(failed) {
-                        throw new ThresholdExceeded(Measure.STARTUP_TIME + " exceeded by "+Math.floor(increasePercentage-100)+"% ("+prevVal+"/"+currVal+")");
+                    if(currVal>prevVal) {
+
+                        double increasePercentage = currVal*100/prevVal;
+                        boolean failed = increasePercentage-threshold > 100;
+                        String message = StringUtils.rightPad(measure.getShortName(),10) + " +"+Math.floor(increasePercentage-100)+"% ("+prevVal+"/"+currVal+")";
+                        comparisonResults.add(
+                                new ComparisonResult(fileName, failed, message)
+                        );
                     }
+                    else {
+                        double decreasePercentage = prevVal*100/currVal;
+                        String message = StringUtils.rightPad(measure.getShortName(),10) +" -"+Math.floor(decreasePercentage-100) + "% ("+ prevVal+">"+currVal+")";
 
+                        comparisonResults.add(
+                                new ComparisonResult(fileName, message)
+                        );
+                    }
                 }
-                else {
-                    double decreasePercentage = prevVal*100/currVal;
-                    System.out.println(Measure.STARTUP_TIME +" improved by "+Math.floor(decreasePercentage-100) + "% ("+ prevVal+">"+currVal+")");
-                }
+
             }
             else {
                 System.err.println("No matching record for test "+fileName +". Skipping ...");
             }
+        }
+
+        // dump results
+        final int pad = maxChars+2;
+        comparisonResults.forEach(r -> System.out.println(StringUtils.rightPad(r.getFile(), pad)+": "+r.getMessage()));
+
+        // decide if ThresholdExceeded
+        List<ComparisonResult> failedTests = comparisonResults.stream().filter(r -> !r.isFailure()).collect(Collectors.toList());
+        if(failedTests.size()>0) {
+            System.err.println("There have been test errors. See previous logs for details ...");
+            throw new ThresholdExceeded(failedTests.size() + " test(s) did exceed the "+this.threshold+"% tolerance.");
+        }
+
+    }
+
+    class ComparisonResult {
+        private String file;
+        private boolean failed;
+        private String message;
+
+        public ComparisonResult(String file, String message) {
+            this(file, false, message);
+        }
+
+        public ComparisonResult(String file, boolean failed, String message) {
+            this.file = file;
+            this.failed = failed;
+            this.message = message;
+        }
+
+        public String getFile() {
+            return file;
+        }
+
+        public boolean isFailure() {
+            return failed;
+        }
+
+        public String getMessage() {
+            return message;
         }
     }
 }
