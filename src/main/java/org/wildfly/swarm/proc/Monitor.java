@@ -244,13 +244,19 @@ public class Monitor {
         return res;
     }
 
+    /**
+     * Main test execution. Spawns an external process
+     * @param file
+     * @param httpCheck
+     * @param collector
+     */
     private void runTest(File file, String httpCheck, final Collector collector) {
 
         System.out.println("Testing "+file.getAbsolutePath());
         String id = file.getAbsolutePath();
 
         String uid = UUID.randomUUID().toString();
-        ProcessBuilder pb = new ProcessBuilder("java", "-jar", file.getAbsolutePath(), "-Duid="+ uid, "-d64", "-Xms512m").inheritIO();
+        ProcessBuilder pb = new ProcessBuilder("java", "-Duid="+ uid, "-Djava.io.tmpdir="+System.getProperty("java.io.tmpdir"), "-jar", file.getAbsolutePath()).inheritIO();
         Process process = null;
         boolean escape = false;
         int attempts = 0;
@@ -317,7 +323,7 @@ public class Monitor {
     private void procInfo(String id, String uid, Collector collector) throws Exception {
         Sigar sigar = new Sigar();
         final ProcessFinder processFinder = new ProcessFinder(sigar);
-        long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.3.ct="+uid);
+        long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.1.ct="+uid);
 
         ProcMem procMem = sigar.getProcMem(pid);
         String heapString = Sigar.formatSize(procMem.getResident());
