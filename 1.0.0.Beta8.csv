@@ -1,9 +1,0 @@
-File,Name,start Samples,start Min,start Max,start .75,mem Samples,mem Min,mem Max,mem .75
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/datasource/datasource-subsystem/target/example-datasource-subsystem-swarm.jar,example-datasource-subsystem-swarm.jar,10,5823.0,6257.0,5982.5,10,260.0,273.0,271.25
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-war/target/example-jpa-jaxrs-cdi-war-swarm.jar,example-jpa-jaxrs-cdi-war-swarm.jar,10,8760.0,11243.0,10014.0,10,345.0,427.0,417.0
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-shrinkwrap/target/example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,10,9144.0,13061.0,11192.75,10,354.0,369.0,367.0
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jaxrs/jaxrs-cdi/target/example-jaxrs-cdi-swarm.jar,example-jaxrs-cdi-swarm.jar,10,7196.0,11975.0,9206.5,10,300.0,325.0,315.25
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/spring-boot-rest/target/demo-0.0.1-SNAPSHOT.jar,demo-0.0.1-SNAPSHOT.jar,10,5521.0,7758.0,6903.75,10,441.0,466.0,464.5
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/servlet/servlet-cdi/target/example-servlet-cdi-swarm.jar,example-servlet-cdi-swarm.jar,10,6279.0,9514.0,7702.5,10,265.0,305.0,305.0
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/messaging/messaging-mdb/target/example-messaging-mdb-swarm.jar,example-messaging-mdb-swarm.jar,10,8337.0,10631.0,10240.25,10,371.0,390.0,387.75
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jaxrs/jaxrs-war/target/example-jaxrs-war-swarm.jar,example-jaxrs-war-swarm.jar,10,5833.0,6766.0,6386.5,10,245.0,255.0,253.25
