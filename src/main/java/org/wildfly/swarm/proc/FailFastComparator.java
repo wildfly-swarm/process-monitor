@@ -52,14 +52,14 @@ public class FailFastComparator implements DeviationComparator {
 
                         double increasePercentage = currVal*100/prevVal;
                         boolean failed = increasePercentage-threshold > 100;
-                        String message = StringUtils.rightPad(measure.getShortName(),10) + " +"+Math.floor(increasePercentage-100)+"% ("+prevVal+"/"+currVal+")";
+                        String message = StringUtils.rightPad(measure.getShortName(),10) + " +"+Math.floor(increasePercentage-100)+"% ("+prevVal+" -> "+currVal+")";
                         comparisonResults.add(
                                 new ComparisonResult(measure, fileName, failed, message)
                         );
                     }
                     else {
                         double decreasePercentage = prevVal*100/currVal;
-                        String message = StringUtils.rightPad(measure.getShortName(),10) +" -"+Math.floor(decreasePercentage-100) + "% ("+ prevVal+">"+currVal+")";
+                        String message = StringUtils.rightPad(measure.getShortName(),10) +" -"+Math.floor(decreasePercentage-100) + "% ("+ prevVal+" -> "+currVal+")";
 
                         comparisonResults.add(
                                 new ComparisonResult(measure, fileName, message)
