@@ -1,4 +1,4 @@
-# Measuring WildFly Swarm Startup Times
+# WildFly Swarm Performance Measures
 
 ## Prerequisite
 
