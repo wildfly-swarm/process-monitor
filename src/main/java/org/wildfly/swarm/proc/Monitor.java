@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +15,12 @@ import java.util.Properties;
 import java.util.UUID;
 
 import com.github.zafarkhaja.semver.Version;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -44,15 +49,32 @@ public class Monitor {
 
     public static void main(String[] args) throws Exception {
 
-        if(args.length<2) {
-            System.out.println("Usage: Monitor <base-dir> <archive-dir> [<output>]");
-            System.exit(-1);
+        Options options = new Options();
 
+        // add t option
+        options.addOption("b", "base", true, "the WildFly Swarm examples directory");
+        options.addOption("a", "archive", true, "the directory with previous performance results");
+        options.addOption("o", "output", true, "the .csv file to store the current test results");
+        //options.addOption("l", "library", true, "an additional library path");
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        for(Object o : options.getOptions())
+        {
+            Option op = (Option)o;
+            if(!cmd.hasOption(op.getOpt()))
+            {
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp("Monitor", "WildFly Swarm Performance Monitor", options, "", true);
+                System.exit(-1);
+            }
         }
-        File baseDir = new File(args[0]);
-        File archiveDir = new File(args[1]);
 
-        Optional<File> output = args.length>2 ? Optional.of(new File(args[2])) : Optional.empty();
+        File baseDir = new File(cmd.getOptionValue("b"));
+        File archiveDir = new File(cmd.getOptionValue("a"));
+
+        Optional<File> output = cmd.hasOption("o") ? Optional.of(new File(cmd.getOptionValue("o"))) : Optional.empty();
 
         System.out.println("Base dir: "+ baseDir.getAbsolutePath());
         System.out.println("Archive dir: "+ archiveDir.getAbsolutePath());
