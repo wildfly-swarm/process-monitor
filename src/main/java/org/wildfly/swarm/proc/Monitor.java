@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.cli.CommandLine;
@@ -303,6 +304,7 @@ public class Monitor {
 
             httpClient.close();
             process.destroy();
+            process.waitFor(2000, TimeUnit.MILLISECONDS);
 
         } catch (Throwable t) {
             t.printStackTrace();
