@@ -1,6 +1,8 @@
 package org.wildfly.swarm.proc;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +54,7 @@ public class FailFastComparator implements DeviationComparator {
                         boolean failed = increasePercentage-threshold > 100;
                         String message = StringUtils.rightPad(measure.getShortName(),10) + " +"+Math.floor(increasePercentage-100)+"% ("+prevVal+"/"+currVal+")";
                         comparisonResults.add(
-                                new ComparisonResult(fileName, failed, message)
+                                new ComparisonResult(measure, fileName, failed, message)
                         );
                     }
                     else {
@@ -60,7 +62,7 @@ public class FailFastComparator implements DeviationComparator {
                         String message = StringUtils.rightPad(measure.getShortName(),10) +" -"+Math.floor(decreasePercentage-100) + "% ("+ prevVal+">"+currVal+")";
 
                         comparisonResults.add(
-                                new ComparisonResult(fileName, message)
+                                new ComparisonResult(measure, fileName, message)
                         );
                     }
                 }
@@ -73,6 +75,13 @@ public class FailFastComparator implements DeviationComparator {
 
         // dump results
         final int pad = maxChars+2;
+        Collections.sort(comparisonResults, new Comparator<ComparisonResult>() {
+            @Override
+            public int compare(ComparisonResult o1, ComparisonResult o2) {
+                return o1.getMeasure().compareTo(o2.getMeasure());
+            }
+        });
+
         comparisonResults.forEach(r -> System.out.println(StringUtils.rightPad(r.getFile(), pad)+": "+r.getMessage()));
 
         // decide if ThresholdExceeded
@@ -88,15 +97,21 @@ public class FailFastComparator implements DeviationComparator {
         private String file;
         private boolean failed;
         private String message;
+        private Measure measure;
 
-        public ComparisonResult(String file, String message) {
-            this(file, false, message);
+        public ComparisonResult(Measure measure, String file, String message) {
+            this(measure, file, false, message);
         }
 
-        public ComparisonResult(String file, boolean failed, String message) {
+        public ComparisonResult(Measure measure, String file, boolean failed, String message) {
+            this.measure = measure;
             this.file = file;
             this.failed = failed;
             this.message = message;
+        }
+
+        public Measure getMeasure() {
+            return measure;
         }
 
         public String getFile() {
