@@ -126,7 +126,7 @@ public class Monitor {
     }
 
     private Monitor skipTests(boolean b) {
-        this.skipTests = true;
+        this.skipTests = b;
         return this;
     }
 
