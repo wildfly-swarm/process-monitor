@@ -20,7 +20,9 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -39,91 +41,143 @@ import org.hyperic.sigar.ptql.ProcessFinder;
  */
 public class Monitor {
 
-    public Monitor(File baseDir, File archiveDir, Optional<File> outputFile, Collector collector) {
+    public Monitor(CommandLine cmd) {
 
-        this.baseDir = baseDir;
-        this.archiveDir = archiveDir;
-        this.outputFile = outputFile;
-        this.collector = collector;
+        baseDir = new File(cmd.getOptionValue("b"));
+        archiveDir = cmd.hasOption("a") ? Optional.of(new File(cmd.getOptionValue("a"))) : Optional.empty();
+
+        outputFile = cmd.hasOption("o") ? Optional.of(new File(cmd.getOptionValue("o"))) : Optional.empty();
+
+        System.out.println("Base dir: "+ baseDir.getAbsolutePath());
+
+        if(archiveDir.isPresent())
+            System.out.println("Archive dir: "+ archiveDir.get().getAbsolutePath());
+
+        if(archiveDir.isPresent() && !archiveDir.get().exists())
+            throw new RuntimeException("Archive does not exist: "+archiveDir.get().getAbsolutePath());
+
+        collector = outputFile.isPresent() ?
+                new CSVCollector(outputFile.get()) : new SystemOutCollector();
+
+
     }
 
     public static void main(String[] args) throws Exception {
 
         Options options = new Options();
 
-        // add t option
-        options.addOption("b", "base", true, "the WildFly Swarm examples directory");
-        options.addOption("a", "archive", true, "the directory with previous performance results");
-        options.addOption("o", "output", true, "the .csv file to store the current test results");
-        //options.addOption("l", "library", true, "an additional library path");
+        options.addOption(
+                OptionBuilder
+                        .withLongOpt("base")
+                        .isRequired(true)
+                        .withDescription("the WildFly Swarm examples directory")
+                        .hasArg()
+                        .create("b")
+        );
+
+        options.addOption(
+                OptionBuilder
+                        .withLongOpt("archive")
+                        .isRequired(false)
+                        .withDescription("the directory with previous performance results")
+                        .hasArg()
+                        .create("a")
+        );
+
+
+        options.addOption(
+                OptionBuilder
+                        .withLongOpt("output")
+                        .isRequired(false)
+                        .withDescription("the .csv file to store the current test results")
+                        .hasArg()
+                        .create("o")
+        );
+
+        options.addOption(
+                        OptionBuilder
+                                .withLongOpt("skip-tests")
+                                .isRequired(false)
+                                .withDescription("skip test exection phase")
+                                .create("skip")
+                );
 
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options, args);
+        CommandLine cmd = null;
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            usage(options);
+        }
 
-        for(Object o : options.getOptions())
+        for(Option opt : options.getOptions())
         {
-            Option op = (Option)o;
-            if(!cmd.hasOption(op.getOpt()))
+            if(opt.isRequired() && !cmd.hasOption(opt.getOpt()))
             {
-                HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp("Monitor", "WildFly Swarm Performance Monitor", options, "", true);
-                System.exit(-1);
+                usage(options);
             }
         }
 
-        File baseDir = new File(cmd.getOptionValue("b"));
-        File archiveDir = new File(cmd.getOptionValue("a"));
-
-        Optional<File> output = cmd.hasOption("o") ? Optional.of(new File(cmd.getOptionValue("o"))) : Optional.empty();
-
-        System.out.println("Base dir: "+ baseDir.getAbsolutePath());
-        System.out.println("Archive dir: "+ archiveDir.getAbsolutePath());
-
-        if(!archiveDir.exists())
-            throw new RuntimeException("Archive does not exist: "+archiveDir.getAbsolutePath());
-
-        Collector collector = output.isPresent() ?
-                new CSVCollector(output.get()) : new SystemOutCollector();
-
         // perform tests
-        new Monitor(baseDir, archiveDir, output, collector).run();
+        new Monitor(cmd)
+                .skipTests(cmd.hasOption("skip"))
+                .run();
 
+    }
+
+    private Monitor skipTests(boolean b) {
+        this.skipTests = true;
+        return this;
+    }
+
+    private static void usage(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("Monitor", "WildFly Swarm Performance Monitor", options, "", true);
+        System.exit(-1);
     }
 
     private void run() throws Exception {
         long total0 = System.currentTimeMillis();
 
-        // test criteria
-        Properties props = new Properties();
-        props.load(Monitor.class.getClassLoader().getResourceAsStream("swarm-apps.properties"));
+        if(!skipTests) {
+            // test criteria
+            Properties props = new Properties();
+            props.load(Monitor.class.getClassLoader().getResourceAsStream("swarm-apps.properties"));
 
-        // first phase: main test execution loop
-        for (Object o : props.keySet()) {
-            String swarmFile = (String) o;
-            String httpCheck = (String) props.get(o);
+            // first phase: main test execution loop
+            for (Object o : props.keySet()) {
+                String swarmFile = (String) o;
+                String httpCheck = (String) props.get(o);
 
-            File file = new File(this.baseDir, swarmFile);
-            String id = file.getAbsolutePath();
+                File file = new File(this.baseDir, swarmFile);
+                String id = file.getAbsolutePath();
 
-            if(!file.exists())
-                throw new RuntimeException("File does not exist: "+ file.getAbsolutePath());
+                if (!file.exists())
+                    throw new RuntimeException("File does not exist: " + file.getAbsolutePath());
 
-            collector.onBegin(id);
-            for(int i=0;i<NUM_ITERATIONS; i++) {
-                runTest(file, httpCheck, collector);
+                collector.onBegin(id);
+                for (int i = 0; i < NUM_ITERATIONS; i++) {
+                    runTest(file, httpCheck, collector);
+                }
+                collector.onFinish(id);
             }
-            collector.onFinish(id);
-        }
 
-        System.out.println("Test Execution Time: "+(System.currentTimeMillis()-total0));
+            System.out.println("Test Execution Time: " + (System.currentTimeMillis() - total0));
 
-        // second phase: compare with previous, archived results
-        Optional<ArchivedResult> prev = getPreviousResults(this.archiveDir);
-        if(prev.isPresent() && (collector instanceof CSVCollector )) { // limited to CSV files
-            checkDeviation(this.outputFile.get(), prev.get());
         }
         else {
-            System.out.println("Performance comparison skipped.");
+            System.out.println("Test execution has been skipped.");
+        }
+
+
+        // second phase: compare with previous, archived results
+        if(outputFile.isPresent() && archiveDir.isPresent()) {
+            Optional<ArchivedResult> prev = getPreviousResults(this.archiveDir.get());
+            if (prev.isPresent() && (collector instanceof CSVCollector)) { // limited to CSV files
+                checkDeviation(this.outputFile.get(), prev.get());
+            } else {
+                System.out.println("Performance comparison skipped.");
+            }
         }
     }
 
@@ -270,11 +324,14 @@ public class Monitor {
 
     private final File baseDir;
 
-    private final File archiveDir;
+    private final Optional<File> archiveDir;
 
     private final Optional<File> outputFile;
 
     private final Collector collector;
+
+    private boolean skipTests;
+
 
     class ArchivedResult {
         private Version version;
