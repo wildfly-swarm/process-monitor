@@ -7,7 +7,7 @@ You need the WildFly Swarm examples. Make sure they are fully build.
 
 ### Sigar Installation
 
-Most of the process monitorin is done using sigar. It requires a native library to be present:
+Most of the process monitoring is done using sigar. It requires a native library to be present:
 (hyperic-sigar-1.6.4)
 
 ```
@@ -43,7 +43,7 @@ WildFly Swarm Performance Monitor
 Or simply use the run script (assumes sigar in $HOME):
 
 ```
-./run.sh -b <PATH_TO_EXAMPLES> -a archive/ -o target/1.0.0-Beta8.csv;
+./run.sh -b <PATH_TO_EXAMPLES> -a archive/ -o target/perf.csv;
 ```
 
 This will take some time and if everything goes well,
