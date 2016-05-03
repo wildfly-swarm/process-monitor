@@ -29,7 +29,21 @@ mvn clean package
 ## Execute the tests
 
 ```
-./run.sh <PATH_TO_EXAMPLES> target/perf.csv
+Usage: Monitor [-a <arg>] -b <arg> [-n <arg>] [-o <arg>] [-skip]
+WildFly Swarm Performance Monitor
+ -a,--archive <arg>             the directory with previous performance
+                                results
+ -b,--base <arg>                the WildFly Swarm examples directory
+ -n,--number-iterations <arg>   number of iterations per test
+ -o,--output <arg>              the .csv file to store the current test
+                                results
+ -skip,--skip-tests             skip test exection phase
+```
+
+Or simply use the run script (assumes sigar in $HOME):
+
+```
+./run.sh -b ../wildfly-swarm-examples/ -a archive/ -o target/1.0.0-Beta8.csv;
 ```
 
 This will take some time and if everything goes well,
@@ -37,22 +51,35 @@ create the test summary at `target/perf.csv`
 
 ## Interpreting the test results
 
-The actual result file is a simple CSV document:
+The default test driver compares the current execution with the most recent in the `archive` directory:
 
 ```
-File,Name,Measurements,Min,Max,.75
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/datasource/datasource-subsystem/target/example-datasource-subsystem-swarm.jar,example-datasource-subsystem-swarm.jar,10,4918.0,6544.0,6307.75
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-war/target/example-jpa-jaxrs-cdi-war-swarm.jar,example-jpa-jaxrs-cdi-war-swarm.jar,10,8422.0,9735.0,9607.75
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-shrinkwrap/target/example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,10,8136.0,9403.0,9274.0
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jaxrs/jaxrs-cdi/target/example-jaxrs-cdi-swarm.jar,example-jaxrs-cdi-swarm.jar,10,6480.0,7739.0,7587.0
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/servlet/servlet-cdi/target/example-servlet-cdi-swarm.jar,example-servlet-cdi-swarm.jar,10,6043.0,7479.0,7024.75
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/messaging/messaging-mdb/target/example-messaging-mdb-swarm.jar,example-messaging-mdb-swarm.jar,10,8503.0,10393.0,9692.25
-/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jaxrs/jaxrs-war/target/example-jaxrs-war-swarm.jar,example-jaxrs-war-swarm.jar,10,4850.0,5886.0,5777.75
+example-datasource-subsystem-swarm.jar      : start      -12.0% (6975.5 -> 6195.0)
+example-jpa-jaxrs-cdi-war-swarm.jar         : start      +10.0% (7658.25 -> 8487.25)
+example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar  : start      +24.0% (7308.75 -> 9095.5)
+example-jaxrs-cdi-swarm.jar                 : start      +12.0% (6840.75 -> 7691.25)
+demo-0.0.1-SNAPSHOT.jar                     : start      -4.0% (7116.0 -> 6789.75)
+example-servlet-cdi-swarm.jar               : start      +29.0% (6656.25 -> 8653.0)
+example-messaging-mdb-swarm.jar             : start      +5.0% (8393.75 -> 8833.0)
+example-jaxrs-war-swarm.jar                 : start      -0.0% (6142.5 -> 6094.0)
+example-datasource-subsystem-swarm.jar      : mem        +2.0% (263.0 -> 270.5)
+example-jpa-jaxrs-cdi-war-swarm.jar         : mem        +22.0% (342.25 -> 417.75)
+example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar  : mem        +28.0% (323.0 -> 416.25)
+example-jaxrs-cdi-swarm.jar                 : mem        +18.0% (282.5 -> 333.5)
+demo-0.0.1-SNAPSHOT.jar                     : mem        -1.0% (467.5 -> 461.75)
+example-servlet-cdi-swarm.jar               : mem        +14.0% (264.25 -> 301.75)
+example-messaging-mdb-swarm.jar             : mem        +3.0% (376.25 -> 391.0)
+example-jaxrs-war-swarm.jar                 : mem        +3.0% (249.0 -> 257.5)
+There have been test errors. See previous logs for details ...
+Exception in thread "main" org.wildfly.swarm.proc.ThresholdExceeded: 8 test(s) did exceed the 10.0% tolerance.
 ```
 
-If you put that into a spread sheet it should be straightforward to compare performance baselines of 
+### Creating Graphs
+The actual result file is a simple CSV document.
+
+If you put that into a spread sheet it should be straightforward to compare performance baselines of
 the different WildFly Swarm releases:
 
-<img src="https://raw.githubusercontent.com/heiko-braun/proc-mon/master/assets/graph.png"/>
+<img src="https://raw.githubusercontent.com/wildfly-swarm/process-monitor/master/assets/graph.png"/>
 
 Have fun.
