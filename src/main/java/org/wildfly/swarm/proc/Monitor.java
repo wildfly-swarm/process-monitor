@@ -60,6 +60,7 @@ public class Monitor {
                 new CSVCollector(outputFile.get()) : new SystemOutCollector();
 
 
+        this.NUM_ITERATIONS = cmd.hasOption("n") ? Integer.valueOf(cmd.getOptionValue("n")) : 10;
     }
 
     public static void main(String[] args) throws Exception {
@@ -101,6 +102,15 @@ public class Monitor {
                                 .withDescription("skip test exection phase")
                                 .create("skip")
                 );
+
+        options.addOption(
+                OptionBuilder
+                        .withLongOpt("number-iterations")
+                        .isRequired(false)
+                        .hasArg()
+                        .withDescription("number of iterations per test")
+                        .create("n")
+        );
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -320,7 +330,7 @@ public class Monitor {
 
     private static final int MS_BETWEEN_ATTEMPTS = 100;
 
-    private static final int NUM_ITERATIONS = 10;
+    private int NUM_ITERATIONS = 10;
 
     private final File baseDir;
 
