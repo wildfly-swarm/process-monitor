@@ -43,7 +43,7 @@ WildFly Swarm Performance Monitor
 Or simply use the run script (assumes sigar in $HOME):
 
 ```
-./run.sh -b ../wildfly-swarm-examples/ -a archive/ -o target/1.0.0-Beta8.csv;
+./run.sh -b <PATH_TO_EXAMPLES> -a archive/ -o target/1.0.0-Beta8.csv;
 ```
 
 This will take some time and if everything goes well,
