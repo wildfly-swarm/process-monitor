@@ -32,18 +32,20 @@ public class FailFastComparator implements DeviationComparator {
 
                 if(currVal>prevVal) {
 
-                    double limit = (prevVal / 100) * threshold;
-                    double diff = currVal-prevVal;
                     double increasePercentage = currVal*100/prevVal;
                     boolean failed = increasePercentage-threshold > 100;
                     if(failed) {
-                        throw new ThresholdExceeded(Measure.STARTUP_TIME + " exceeded by "+Math.floor(increasePercentage-100)+"%: "+prevVal+"/"+currVal);
+                        throw new ThresholdExceeded(Measure.STARTUP_TIME + " exceeded by "+Math.floor(increasePercentage-100)+"% ("+prevVal+"/"+currVal+")");
                     }
 
                 }
+                else {
+                    double decreasePercentage = prevVal*100/currVal;
+                    System.out.println(Measure.STARTUP_TIME +" improved by "+Math.floor(decreasePercentage-100) + "% ("+ prevVal+">"+currVal+")");
+                }
             }
             else {
-                System.out.println("No matching record for test "+fileName +". Skipping ...");
+                System.err.println("No matching record for test "+fileName +". Skipping ...");
             }
         }
     }
