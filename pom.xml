@@ -10,15 +10,8 @@
   </parent>
 
   <groupId>org.wildfly.swarm</groupId>
-  <artifactId>proc-mon</artifactId>
+  <artifactId>process-monitor</artifactId>
   <version>0.1.0</version>
-
-  <scm>
-    <connection>scm:git@github.com:wildfly-swarm/process-monitor.git</connection>
-    <developerConnection>scm:git@github.com:wildfly-swarm/process-monitor.git</developerConnection>
-    <url>https://github.com/wildfly-swarm/process-monitor</url>
-    <tag>HEAD</tag>
-  </scm>
 
   <dependencies>
     <dependency>
