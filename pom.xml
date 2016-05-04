@@ -16,8 +16,8 @@
   <packaging>jar</packaging>
 
   <scm>
-    <connection>scm:git@github.com:wildfly-swarm/process-monitor.git</connection>
-    <developerConnection>scm:git@github.com:wildfly-swarm/process-monitor.git</developerConnection>
+    <connection>scm:git:git@github.com:wildfly-swarm/process-monitor.git</connection>
+    <developerConnection>scm:git:git@github.com:wildfly-swarm/process-monitor.git</developerConnection>
     <url>https://github.com/wildfly-swarm/process-monitor</url>
     <tag>HEAD</tag>
   </scm>
