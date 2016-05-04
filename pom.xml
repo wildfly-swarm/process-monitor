@@ -13,6 +13,15 @@
   <artifactId>process-monitor</artifactId>
   <version>0.1.0-SNAPSHOT</version>
 
+  <packaging>jar</packaging>
+
+  <scm>
+    <connection>scm:git@github.com:wildfly-swarm/process-monitor.git</connection>
+    <developerConnection>scm:git@github.com:wildfly-swarm/process-monitor.git</developerConnection>
+    <url>https://github.com/wildfly-swarm/process-monitor</url>
+    <tag>HEAD</tag>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -92,9 +101,4 @@
       </plugin>
     </plugins>
   </build>
-
-
-  <scm>
-    <tag>0.1.0</tag>
-  </scm>
 </project>
