@@ -15,6 +15,6 @@ fi
 echo "(Re)creating WildFly Swarm temp directory $TMP_DIR"	  
 mkdir $TMP_DIR
       
-java $JAVA_OPTS -Xms1g -Xmx1g -Djava.io.tmpdir=$TMP_DIR -Djava.library.path=$LIB_DIR -jar target/proc-mon-1.0-SNAPSHOT.jar "$@"
+java $JAVA_OPTS -Xms1g -Xmx1g -Djava.io.tmpdir=$TMP_DIR -Djava.library.path=$LIB_DIR -jar target/process-monitor.jar "$@"
 
 

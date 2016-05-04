@@ -68,6 +68,8 @@
   </dependencies>
 
   <build>
+    <finalName>process-monitor</finalName>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
