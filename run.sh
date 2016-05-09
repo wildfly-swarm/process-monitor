@@ -1,6 +1,6 @@
 #!/bin/sh
 
-LIB_DIR=~/hyperic-sigar-1.6.4/sigar-bin/lib
+LIB_DIR=./libs/ 
 TMP_DIR=target/swarm_tmp
 
 if [ ! -d "$LIB_DIR" ]; then
