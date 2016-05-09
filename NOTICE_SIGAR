@@ -1,0 +1,12 @@
+This distribution contains work of the sigar project and as such requires mentioning of both the authors and distributions notice
+of the original sigar libraries. These can be found at https://github.com/hyperic/sigar and within the sigar distribution that can be downloaded from 
+here https://sourceforge.net/projects/sigar/.
+
+In particular we would to attribute the contribution of the original authors and copyright notices:
+
+- https://github.com/hyperic/sigar/blob/master/AUTHORS
+- https://github.com/hyperic/sigar/blob/master/NOTICE
+
+Thanks to the sigar team.
+
+
