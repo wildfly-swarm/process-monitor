@@ -11,11 +11,8 @@ Most of the process monitoring is done using sigar. It requires a native library
 (hyperic-sigar-1.6.4)
 
 ```
--Djava.library.path=$PATH_TO_SIGAR/sigar-bin/lib/
+-Djava.library.path=./libs/
 ```
-
-It can be downloaded here:
-https://sourceforge.net/projects/sigar/
 
 ## Building the test driver
 
