@@ -1,3 +1,0 @@
-[submodule "wildfly-swarm-examples"]
-	path = wildfly-swarm-examples
-	url = https://github.com/wildfly-swarm/wildfly-swarm-examples.git
