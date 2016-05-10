@@ -1,0 +1,8 @@
+File,Name,start Samples,start Min,start Max,start .75,mem Samples,mem Min,mem Max,mem .75
+/scratch/jenkins/workspace/performance-tests/./examples/datasource/datasource-subsystem/target/example-datasource-subsystem-swarm.jar,example-datasource-subsystem-swarm.jar,1,14150.0,14150.0,14150.0,1,334.0,334.0,334.0
+/scratch/jenkins/workspace/performance-tests/./examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-war/target/example-jpa-jaxrs-cdi-war-swarm.jar,example-jpa-jaxrs-cdi-war-swarm.jar,1,13634.0,13634.0,13634.0,1,451.0,451.0,451.0
+/scratch/jenkins/workspace/performance-tests/./examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-shrinkwrap/target/example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,1,14074.0,14074.0,14074.0,1,473.0,473.0,473.0
+/scratch/jenkins/workspace/performance-tests/./examples/jaxrs/jaxrs-cdi/target/example-jaxrs-cdi-swarm.jar,example-jaxrs-cdi-swarm.jar,1,18431.0,18431.0,18431.0,1,370.0,370.0,370.0
+/scratch/jenkins/workspace/performance-tests/./examples/servlet/servlet-cdi/target/example-servlet-cdi-swarm.jar,example-servlet-cdi-swarm.jar,1,12707.0,12707.0,12707.0,1,347.0,347.0,347.0
+/scratch/jenkins/workspace/performance-tests/./examples/messaging/messaging-mdb/target/example-messaging-mdb-swarm.jar,example-messaging-mdb-swarm.jar,1,16424.0,16424.0,16424.0,1,487.0,487.0,487.0
+/scratch/jenkins/workspace/performance-tests/./examples/jaxrs/jaxrs-war/target/example-jaxrs-war-swarm.jar,example-jaxrs-war-swarm.jar,1,6682.0,6682.0,6682.0,1,287.0,287.0,287.0
