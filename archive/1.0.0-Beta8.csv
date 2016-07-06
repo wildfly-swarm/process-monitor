@@ -1,8 +1,9 @@
 File,Name,start Samples,start Min,start Max,start .75,mem Samples,mem Min,mem Max,mem .75
-/scratch/jenkins/workspace/performance-tests/./examples/datasource/datasource-subsystem/target/example-datasource-subsystem-swarm.jar,example-datasource-subsystem-swarm.jar,1,14150.0,14150.0,14150.0,1,334.0,334.0,334.0
-/scratch/jenkins/workspace/performance-tests/./examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-war/target/example-jpa-jaxrs-cdi-war-swarm.jar,example-jpa-jaxrs-cdi-war-swarm.jar,1,13634.0,13634.0,13634.0,1,451.0,451.0,451.0
-/scratch/jenkins/workspace/performance-tests/./examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-shrinkwrap/target/example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,1,14074.0,14074.0,14074.0,1,473.0,473.0,473.0
-/scratch/jenkins/workspace/performance-tests/./examples/jaxrs/jaxrs-cdi/target/example-jaxrs-cdi-swarm.jar,example-jaxrs-cdi-swarm.jar,1,18431.0,18431.0,18431.0,1,370.0,370.0,370.0
-/scratch/jenkins/workspace/performance-tests/./examples/servlet/servlet-cdi/target/example-servlet-cdi-swarm.jar,example-servlet-cdi-swarm.jar,1,12707.0,12707.0,12707.0,1,347.0,347.0,347.0
-/scratch/jenkins/workspace/performance-tests/./examples/messaging/messaging-mdb/target/example-messaging-mdb-swarm.jar,example-messaging-mdb-swarm.jar,1,16424.0,16424.0,16424.0,1,487.0,487.0,487.0
-/scratch/jenkins/workspace/performance-tests/./examples/jaxrs/jaxrs-war/target/example-jaxrs-war-swarm.jar,example-jaxrs-war-swarm.jar,1,6682.0,6682.0,6682.0,1,287.0,287.0,287.0
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/datasource/datasource-subsystem/target/example-datasource-subsystem-swarm.jar,example-datasource-subsystem-swarm.jar,10,6998.0,8849.0,8225.75,10,258.0,280.0,274.0
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-war/target/example-jpa-jaxrs-cdi-war-swarm.jar,example-jpa-jaxrs-cdi-war-swarm.jar,10,10469.0,13308.0,12638.75,10,356.0,419.0,408.5
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jpa-jaxrs-cdi/jpa-jaxrs-cdi-shrinkwrap/target/example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,example-jpa-jaxrs-cdi-shrinkwrap-swarm.jar,10,10957.0,15450.0,12060.5,10,358.0,422.0,381.0
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jaxrs/jaxrs-cdi/target/example-jaxrs-cdi-swarm.jar,example-jaxrs-cdi-swarm.jar,10,8780.0,12802.0,9878.0,10,311.0,337.0,334.0
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/spring-boot-rest/target/demo-0.0.1-SNAPSHOT.jar,demo-0.0.1-SNAPSHOT.jar,10,6194.0,9590.0,8571.0,10,440.0,474.0,462.5
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/servlet/servlet-cdi/target/example-servlet-cdi-swarm.jar,example-servlet-cdi-swarm.jar,10,7983.0,10865.0,9637.0,10,263.0,321.0,285.75
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/messaging/messaging-mdb/target/example-messaging-mdb-swarm.jar,example-messaging-mdb-swarm.jar,10,10664.0,12884.0,12431.5,10,373.0,428.0,403.25
+/Users/hbraun/dev/prj/wfs/wildfly-swarm-examples/jaxrs/jaxrs-war/target/example-jaxrs-war-swarm.jar,example-jaxrs-war-swarm.jar,10,6861.0,7551.0,7349.75,10,246.0,265.0,257.5
