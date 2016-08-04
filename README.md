@@ -8,7 +8,7 @@ You need the WildFly Swarm examples. Make sure they are fully build.
 ### Sigar Installation
 
 Most of the process monitoring is done using sigar. It requires a native library to be present:
-(hyperic-sigar-1.6.4)
+(hyperic-sigar-1.6.4, https://sourceforge.net/projects/sigar/)
 
 ```
 -Djava.library.path=./libs/
