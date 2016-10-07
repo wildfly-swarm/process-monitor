@@ -39,7 +39,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVFormat;
@@ -86,49 +85,44 @@ public class Monitor {
 
         Options options = new Options();
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("base")
-                        .isRequired(true)
-                        .withDescription("the WildFly Swarm examples directory")
-                        .hasArg()
-                        .create("b")
+        options.addOption(Option.builder("b")
+                .longOpt("base")
+                .required(true)
+                .desc("the WildFly Swarm examples directory")
+                .hasArg()
+                .build()
         );
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("archive")
-                        .isRequired(false)
-                        .withDescription("the directory with previous performance results")
-                        .hasArg()
-                        .create("a")
+        options.addOption(Option.builder("a")
+                .longOpt("archive")
+                .required(false)
+                .desc("the directory with previous performance results")
+                .hasArg()
+                .build()
         );
 
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("output")
-                        .isRequired(false)
-                        .withDescription("the .csv file to store the current test results")
-                        .hasArg()
-                        .create("o")
+        options.addOption(Option.builder("o")
+                .longOpt("output")
+                .required(false)
+                .desc("the .csv file to store the current test results")
+                .hasArg()
+                .build()
         );
 
-        options.addOption(
-                        OptionBuilder
-                                .withLongOpt("skip-tests")
-                                .isRequired(false)
-                                .withDescription("skip test exection phase")
-                                .create("skip")
-                );
+        options.addOption(Option.builder("skip")
+                .longOpt("skip-tests")
+                .required(false)
+                .desc("skip test execution phase")
+                .build()
+        );
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("number-iterations")
-                        .isRequired(false)
-                        .hasArg()
-                        .withDescription("number of iterations per test")
-                        .create("n")
+        options.addOption(Option.builder("n")
+                .longOpt("number-iterations")
+                .required(false)
+                .hasArg()
+                .desc("number of iterations per test")
+                .build()
         );
 
         CommandLineParser parser = new DefaultParser();
