@@ -277,7 +277,6 @@ public class Monitor {
         String uid = UUID.randomUUID().toString();
         ProcessBuilder pb = new ProcessBuilder("java", "-Duid="+ uid, "-Djava.io.tmpdir="+System.getProperty("java.io.tmpdir"), "-jar", file.getAbsolutePath()).inheritIO();
         Process process = null;
-        boolean escape = false;
         int attempts = 0;
 
         try {
@@ -287,49 +286,55 @@ public class Monitor {
 
             final CloseableHttpClient httpClient = HttpClients.createDefault();
 
-            do {
+            while (true) {
+                if (attempts >= NUM_CONNECTION_ATTEMPTS) {
+                    System.out.println("Max attempts reached, escaping sequence");
+                    break;
+                }
 
+                CloseableHttpResponse response = null;
                 try {
-
                     HttpGet request = new HttpGet(httpCheck);
-
-                    CloseableHttpResponse response = httpClient.execute(request);
+                    response = httpClient.execute(request);
                     int statusCode = response.getStatusLine().getStatusCode();
-                    if(statusCode!=200) {
-                        new RuntimeException("Failed to execute HTTP check: " + statusCode).printStackTrace();
-                        escape = true;
+
+                    if (statusCode == 200) {
+                        collector.onMeasurement(id, Measure.STARTUP_TIME, (double) (System.currentTimeMillis() - s0));
+                        procInfo(id, uid, collector);
+                        break;
+                    } else if (statusCode == 404) {
+                        // this can happen during server boot, when the HTTP endpoint is already exposed
+                        // but the application is not yet deployed
+                    } else {
+                        System.err.println("Failed to execute HTTP check: " + statusCode);
+                        break;
                     }
-
-                    procInfo(id, uid, collector);
-
-                    collector.onMeasurement(id, Measure.STARTUP_TIME, new Double(System.currentTimeMillis()-s0));
-                    escape = true;
                 } catch (HttpHostConnectException e) {
-
-                    //System.err.println(e.getMessage());
-
-                    if(attempts < NUM_CONNECTION_ATTEMPTS) {
-                        System.err.println("Failed to connect. Scheduling retry ...");
-                        Thread.sleep(MS_BETWEEN_ATTEMPTS);
-                        attempts++;
-                    }
-                    else {
-                        System.out.println("Max attempts reached, escaping sequence");
-                        escape = true;
+                    // server not running yet
+                } finally {
+                    if (response != null) {
+                        response.close();
                     }
                 }
-            } while(!escape);
+
+                attempts++;
+                Thread.sleep(MS_BETWEEN_ATTEMPTS);
+            }
 
             httpClient.close();
             process.destroy();
             process.waitFor(2000, TimeUnit.MILLISECONDS);
-
         } catch (Throwable t) {
             t.printStackTrace();
-        }
-        finally {
-            if(process!=null && process.isAlive())
+        } finally {
+            if (process!=null && process.isAlive()) {
                 process.destroyForcibly();
+                try {
+                    process.waitFor(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
     }
