@@ -42,7 +42,7 @@ public class FailFastComparator implements DeviationComparator {
     public FailFastComparator(double threshold) {
         this.threshold = threshold;
 
-        criteria.put(Measure.HEAP_AFTER_INVOCATION, CSVCollector.MEM_PERCENTILE_IDX);
+        criteria.put(Measure.RSS_AFTER_INVOCATION, CSVCollector.MEM_PERCENTILE_IDX);
         criteria.put(Measure.STARTUP_TIME, CSVCollector.STARTUP_PERCENTILE_IDX);
     }
 

@@ -25,7 +25,12 @@ package org.wildfly.swarm.proc;
 public enum Measure {
 
     STARTUP_TIME("start"),
-    HEAP_AFTER_INVOCATION("mem");
+    RSS_AFTER_INVOCATION("mem"),
+    JAVA_HEAP_AFTER_INVOCATION("javaheap"),
+    JAR_SIZE("jarsize"),
+    TMP_DIR_SIZE("tmpdir"),
+    SHUTDOWN_TIME("stop"),
+    ;
 
     Measure(String shortName) {
         this.shortName = shortName;

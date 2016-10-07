@@ -21,6 +21,7 @@ package org.wildfly.swarm.proc;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.cli.CommandLine;
@@ -55,6 +57,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.hyperic.sigar.ProcMem;
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.ptql.ProcessFinder;
+
+import static org.wildfly.swarm.proc.Units.bytesToMegabytes;
 
 /**
  * @author Heiko Braun
@@ -197,7 +201,7 @@ public class Monitor {
                 collector.onFinish(id);
             }
 
-            System.out.println("Test Execution Time: " + (System.currentTimeMillis() - total0));
+            System.out.println("Test Execution Time: " + (System.currentTimeMillis() - total0) + "ms");
 
         }
         else {
@@ -315,7 +319,9 @@ public class Monitor {
 
                     if (statusCode == 200) {
                         collector.onMeasurement(id, Measure.STARTUP_TIME, (double) (System.currentTimeMillis() - s0));
-                        procInfo(id, uid, collector);
+                        measureMemory(id, uid, collector);
+                        measureJarSize(id, file, collector);
+                        measureTmpDirSize(id, tmp, collector);
                         break;
                     } else if (statusCode == 404) {
                         // this can happen during server boot, when the HTTP endpoint is already exposed
@@ -337,8 +343,13 @@ public class Monitor {
             }
 
             httpClient.close();
+
+            final long s1 = System.currentTimeMillis();
             process.destroy();
-            process.waitFor(2000, TimeUnit.MILLISECONDS);
+            boolean finished = process.waitFor(2, TimeUnit.SECONDS);
+            if (finished) {
+                collector.onMeasurement(id, Measure.SHUTDOWN_TIME, (double) (System.currentTimeMillis() - s1));
+            }
         } catch (Throwable t) {
             t.printStackTrace();
         } finally {
@@ -354,25 +365,38 @@ public class Monitor {
 
     }
 
-    /**
-     * See https://support.hyperic.com/display/SIGAR/PTQL
-     * @param process
-     * @param file
-     * @throws Exception
-     */
-    private void procInfo(String id, String uid, Collector collector) throws Exception {
+    private void measureMemory(String id, String uid, Collector collector) throws Exception {
+        // see https://support.hyperic.com/display/SIGAR/PTQL
         Sigar sigar = new Sigar();
         final ProcessFinder processFinder = new ProcessFinder(sigar);
         long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.1.ct="+uid);
 
         ProcMem procMem = sigar.getProcMem(pid);
-        String heapString = Sigar.formatSize(procMem.getResident());
-        collector.onMeasurement(id, Measure.HEAP_AFTER_INVOCATION, Long.valueOf(heapString.substring(0, heapString.length()-1)));  // TODO only works for MB
+        long rss = procMem.getResident();
+        collector.onMeasurement(id, Measure.RSS_AFTER_INVOCATION, bytesToMegabytes(rss));
+
+        long javaHeap = Jstat.usedHeap(pid);
+        collector.onMeasurement(id, Measure.JAVA_HEAP_AFTER_INVOCATION, bytesToMegabytes(javaHeap));
     }
 
-    private static final int NUM_CONNECTION_ATTEMPTS = 200;
+    private void measureJarSize(String id, File jar, Collector collector) throws IOException {
+        long jarSize = jar.length();
+        collector.onMeasurement(id, Measure.JAR_SIZE, bytesToMegabytes(jarSize));
+    }
 
-    private static final int MS_BETWEEN_ATTEMPTS = 100;
+    private void measureTmpDirSize(String id, Path tmpDir, Collector collector) throws IOException {
+        try (Stream<Path> stream = Files.walk(tmpDir)) {
+            long tmpDirSize = stream
+                    .mapToLong(path -> path.toFile().length())
+                    .sum();
+
+            collector.onMeasurement(id, Measure.TMP_DIR_SIZE, bytesToMegabytes(tmpDirSize));
+        }
+    }
+
+    private static final int NUM_CONNECTION_ATTEMPTS = 1000;
+
+    private static final int MS_BETWEEN_ATTEMPTS = 20;
 
     private int NUM_ITERATIONS = 10;
 
