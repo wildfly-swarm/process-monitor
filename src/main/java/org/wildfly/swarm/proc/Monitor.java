@@ -22,6 +22,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -62,6 +65,7 @@ public class Monitor {
     public Monitor(CommandLine cmd) {
 
         baseDir = new File(cmd.getOptionValue("b"));
+        workDir = new File(cmd.getOptionValue("w"));
         archiveDir = cmd.hasOption("a") ? Optional.of(new File(cmd.getOptionValue("a"))) : Optional.empty();
 
         outputFile = cmd.hasOption("o") ? Optional.of(new File(cmd.getOptionValue("o"))) : Optional.empty();
@@ -125,6 +129,14 @@ public class Monitor {
                 .build()
         );
 
+        options.addOption(Option.builder("w")
+                .longOpt("workdir")
+                .required(true)
+                .hasArg()
+                .desc("where to store testing artifacts")
+                .build()
+        );
+
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         try {
@@ -180,7 +192,7 @@ public class Monitor {
 
                 collector.onBegin(id);
                 for (int i = 0; i < NUM_ITERATIONS; i++) {
-                    runTest(file, httpCheck, collector);
+                    runTest(i, file, httpCheck, collector);
                 }
                 collector.onFinish(id);
             }
@@ -259,21 +271,30 @@ public class Monitor {
 
     /**
      * Main test execution. Spawns an external process
+     * @param iteration
      * @param file
      * @param httpCheck
      * @param collector
      */
-    private void runTest(File file, String httpCheck, final Collector collector) {
+    private void runTest(int iteration, File file, String httpCheck, final Collector collector) {
 
-        System.out.println("Testing "+file.getAbsolutePath());
+        System.out.println("Testing " + file.getAbsolutePath() + ", iteration " + iteration);
         String id = file.getAbsolutePath();
 
         String uid = UUID.randomUUID().toString();
-        ProcessBuilder pb = new ProcessBuilder("java", "-Duid="+ uid, "-Djava.io.tmpdir="+System.getProperty("java.io.tmpdir"), "-jar", file.getAbsolutePath()).inheritIO();
         Process process = null;
         int attempts = 0;
 
         try {
+            Path workDir = Files.createDirectories(this.workDir.toPath().resolve(Paths.get(file.getName(), "iteration-" + iteration)));
+            Path tmp = Files.createDirectory(workDir.resolve("tmp"));
+
+            ProcessBuilder pb = new ProcessBuilder("java",
+                    "-Duid=" + uid,
+                    "-Djava.io.tmpdir=" + tmp.toAbsolutePath().toString(),
+                    "-jar", file.getAbsolutePath())
+                    .redirectOutput(workDir.resolve("stdout.txt").toFile())
+                    .redirectError(workDir.resolve("stderr.txt").toFile());
 
             final long s0 = System.currentTimeMillis();
             process = pb.start();
@@ -346,8 +367,6 @@ public class Monitor {
 
         ProcMem procMem = sigar.getProcMem(pid);
         String heapString = Sigar.formatSize(procMem.getResident());
-        System.out.println("PID for test driver: "+ pid);
-        System.out.println("MEM for PID: "+ heapString);
         collector.onMeasurement(id, Measure.HEAP_AFTER_INVOCATION, Long.valueOf(heapString.substring(0, heapString.length()-1)));  // TODO only works for MB
     }
 
@@ -358,6 +377,8 @@ public class Monitor {
     private int NUM_ITERATIONS = 10;
 
     private final File baseDir;
+
+    private final File workDir;
 
     private final Optional<File> archiveDir;
 
