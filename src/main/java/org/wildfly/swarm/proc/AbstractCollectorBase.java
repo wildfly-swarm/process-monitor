@@ -37,10 +37,8 @@ public abstract class AbstractCollectorBase implements Collector {
     }
 
     public void onMeasurement(String id, Measure measure, double val) {
-        if(!results.containsKey(measure))
-            results.put(measure, new DescriptiveStatistics());
-        results.get(measure).addValue(val);
+        results.computeIfAbsent(measure, m -> new DescriptiveStatistics()).addValue(val);
     }
 
     public abstract void onFinish(String id);
-};
+}

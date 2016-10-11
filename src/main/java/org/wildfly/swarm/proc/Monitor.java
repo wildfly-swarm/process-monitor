@@ -20,18 +20,14 @@ package org.wildfly.swarm.proc;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -211,7 +207,7 @@ public class Monitor {
 
         // second phase: compare with previous, archived results
         if(outputFile.isPresent() && archiveDir.isPresent()) {
-            Optional<ArchivedResult> prev = getPreviousResults(this.archiveDir.get());
+            Optional<ArchivedResult> prev = getPreviousResults(outputFile.get().toPath(), this.archiveDir.get());
             if (prev.isPresent() && (collector instanceof CSVCollector)) { // limited to CSV files
                 checkDeviation(this.outputFile.get(), prev.get());
             } else {
@@ -232,45 +228,31 @@ public class Monitor {
 
     private CSVParser loadCSV(File file) throws Exception {
         Reader in = new FileReader(file);
-        CSVParser parser = CSVFormat.DEFAULT.parse(in);
-        return parser;
+        return CSVFormat.DEFAULT.parse(in);
     }
 
-    private Optional<ArchivedResult> getPreviousResults(File dir) {
-
-        String[] archivedResults = dir.list(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.endsWith(".csv");
-            }
-        });
-
-        Map<Version, File> versions = new HashMap<Version, File>();
-        for (String archivedResult : archivedResults) {
-            File archive = new File(dir, archivedResult);
-            String name = archive.getName();
-            Version v = Version.valueOf(name.substring(0, name.lastIndexOf(".")));
-            versions.put(v, archive);
+    private static boolean isSameFile(Path path1, Path path2) {
+        try {
+            return Files.isSameFile(path1, path2);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
+    }
 
-        Optional<ArchivedResult> res = Optional.empty();
-
-        if(versions.size()>0) {
-            List<Version> sortedKeys = new ArrayList<Version>(versions.keySet());
-            Collections.sort(sortedKeys, new Comparator<Version>() {
-                public int compare(Version v1, Version v2) {
-                    return v1.compareTo(v2);
-                }
-            });
-
-            sortedKeys.forEach( k -> System.out.println(k));
-
-            Version key = sortedKeys.get(sortedKeys.size() - 1);
-            res = Optional.of(
-                    new ArchivedResult(key, versions.get(key))
-            );
+    private Optional<ArchivedResult> getPreviousResults(Path currentOutput, File dir) throws IOException {
+        try (Stream<Path> stream = Files.walk(dir.toPath(), 1)) {
+            return stream
+                    .filter(path -> Files.isRegularFile(path))
+                    .filter(path -> path.getFileName().toString().endsWith(".csv"))
+                    .filter(path -> !isSameFile(currentOutput, path))
+                    .map(path -> {
+                        String fileName = path.getFileName().toString();
+                        Version version = Version.valueOf(fileName.substring(0, fileName.lastIndexOf(".")));
+                        return new ArchivedResult(version, path.toFile());
+                    })
+                    .sorted(Comparator.comparing(ArchivedResult::getVersion).reversed())
+                    .findFirst();
         }
-
-        return res;
     }
 
     /**
@@ -413,7 +395,7 @@ public class Monitor {
     private boolean skipTests;
 
 
-    class ArchivedResult {
+    static class ArchivedResult {
         private Version version;
         private File file;
 

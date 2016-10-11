@@ -93,12 +93,7 @@ public class FailFastComparator implements DeviationComparator {
 
         // dump results
         final int pad = maxChars+2;
-        Collections.sort(comparisonResults, new Comparator<ComparisonResult>() {
-            @Override
-            public int compare(ComparisonResult o1, ComparisonResult o2) {
-                return o1.getMeasure().compareTo(o2.getMeasure());
-            }
-        });
+        Collections.sort(comparisonResults, Comparator.comparing(ComparisonResult::getMeasure));
 
         comparisonResults.forEach(r -> System.out.println(StringUtils.rightPad(r.getFile(), pad)+": "+r.getMessage()));
 
@@ -111,7 +106,7 @@ public class FailFastComparator implements DeviationComparator {
 
     }
 
-    class ComparisonResult {
+    static class ComparisonResult {
         private String file;
         private boolean failed;
         private String message;

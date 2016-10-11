@@ -38,7 +38,7 @@ public class CSVCollector extends AbstractCollectorBase {
     public CSVCollector(File file) {
 
         if(!file.getName().endsWith(".csv"))
-            throw new IllegalArgumentException("Illegale file name "+file.getAbsolutePath());
+            throw new IllegalArgumentException("Illegal file name "+file.getAbsolutePath());
 
         this.file = file;
 
@@ -54,16 +54,16 @@ public class CSVCollector extends AbstractCollectorBase {
 
     private void writeHeader(File file) throws Exception {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("File").append(SEP);
         sb.append("Name").append(SEP);
 
         int i=0;
         for (Measure m : Measure.values()) {
-            sb.append(m.getShortName()+ SAMPLES).append(SEP);
-            sb.append(m.getShortName()+ MIN).append(SEP);
-            sb.append(m.getShortName()+ MAX).append(SEP);
-            sb.append(m.getShortName()+ PERCENTILE);
+            sb.append(m.getShortName()).append(SAMPLES).append(SEP);
+            sb.append(m.getShortName()).append(MIN).append(SEP);
+            sb.append(m.getShortName()).append(MAX).append(SEP);
+            sb.append(m.getShortName()).append(PERCENTILE);
 
             if(i<Measure.values().length-1)
                 sb.append(SEP);
@@ -77,7 +77,7 @@ public class CSVCollector extends AbstractCollectorBase {
 
     public void onFinish(String id) {
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append(id).append(SEP);
         sb.append(id.substring(id.lastIndexOf("/")+1, id.length())).append(SEP);
 
@@ -87,7 +87,7 @@ public class CSVCollector extends AbstractCollectorBase {
                 throw new RuntimeException("Measurement is missing "+m);
 
             DescriptiveStatistics stats = results.get(m);
-            sb.append(stats.getValues().length).append(SEP);
+            sb.append(stats.getN()).append(SEP);
             sb.append(stats.getMin()).append(SEP);
             sb.append(stats.getMax()).append(SEP);
             sb.append(stats.getPercentile(75));
@@ -101,7 +101,7 @@ public class CSVCollector extends AbstractCollectorBase {
         try {
             Files.write(Paths.get(file.getAbsolutePath()), sb.toString().getBytes(), StandardOpenOption.APPEND);
         } catch (Exception e) {
-            throw new RuntimeException("Faile to write data", e);
+            throw new RuntimeException("Failed to write data", e);
         }
     }
 
