@@ -18,11 +18,13 @@
 
 package org.wildfly.swarm.proc;
 
+import java.io.Closeable;
+
 /**
  * @author Heiko Braun
  * @since 29/04/16
  */
-interface Collector {
+interface Collector extends Closeable {
     void onBegin(String id);
     void onMeasurement(String id, Measure measure, double val);
     void onFinish(String id);

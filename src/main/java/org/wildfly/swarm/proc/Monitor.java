@@ -19,7 +19,6 @@
 package org.wildfly.swarm.proc;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
@@ -196,6 +195,7 @@ public class Monitor {
                 }
                 collector.onFinish(id);
             }
+            collector.close();
 
             System.out.println("Test Execution Time: " + (System.currentTimeMillis() - total0) + "ms");
 
@@ -225,10 +225,9 @@ public class Monitor {
         new FailFastComparator(10.00).compare(previous, current);
     }
 
-
     private CSVParser loadCSV(File file) throws Exception {
-        Reader in = new FileReader(file);
-        return CSVFormat.DEFAULT.parse(in);
+        Reader input = Files.newBufferedReader(file.toPath());
+        return CSVFormat.DEFAULT.parse(input);
     }
 
     private static boolean isSameFile(Path path1, Path path2) {

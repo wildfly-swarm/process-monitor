@@ -18,6 +18,7 @@
 
 package org.wildfly.swarm.proc;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,4 +42,9 @@ public abstract class AbstractCollectorBase implements Collector {
     }
 
     public abstract void onFinish(String id);
+
+    @Override
+    public void close() throws IOException {
+        // subclasses should only override if they need to
+    }
 }

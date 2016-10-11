@@ -19,11 +19,14 @@
 package org.wildfly.swarm.proc;
 
 import java.io.File;
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 /**
@@ -32,77 +35,59 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
  */
 public class CSVCollector extends AbstractCollectorBase {
 
-    private final static String SEP = ",";
-    private final static String NEWLINE = "\n";
-
     public CSVCollector(File file) {
+        if (!file.getName().endsWith(".csv")) {
+            throw new IllegalArgumentException("Illegal file name " + file.getAbsolutePath());
+        }
 
-        if(!file.getName().endsWith(".csv"))
-            throw new IllegalArgumentException("Illegal file name "+file.getAbsolutePath());
-
-        this.file = file;
+        List<String> headerList = new ArrayList<>();
+        headerList.add("File");
+        headerList.add("Name");
+        for (Measure measure : Measure.values()) {
+            headerList.add(measure.getShortName() + SAMPLES);
+            headerList.add(measure.getShortName() + MIN);
+            headerList.add(measure.getShortName() + MAX);
+            headerList.add(measure.getShortName() + PERCENTILE);
+        }
+        String[] header = headerList.toArray(new String[0]);
 
         try {
-            if(!file.exists())
-            {
-                writeHeader(file);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error access CSV file", e);
+            Appendable output = Files.newBufferedWriter(file.toPath());
+            this.csvOutput = CSVFormat.DEFAULT.withHeader(header).print(output);
+            this.csvOutput.flush();
+        } catch (IOException e) {
+            throw new RuntimeException("Error accessing CSV file", e);
         }
-    }
-
-    private void writeHeader(File file) throws Exception {
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("File").append(SEP);
-        sb.append("Name").append(SEP);
-
-        int i=0;
-        for (Measure m : Measure.values()) {
-            sb.append(m.getShortName()).append(SAMPLES).append(SEP);
-            sb.append(m.getShortName()).append(MIN).append(SEP);
-            sb.append(m.getShortName()).append(MAX).append(SEP);
-            sb.append(m.getShortName()).append(PERCENTILE);
-
-            if(i<Measure.values().length-1)
-                sb.append(SEP);
-            i++;
-        }
-
-        PrintWriter writer = new PrintWriter(file, "UTF-8");
-        writer.println(sb.toString());
-        writer.close();
     }
 
     public void onFinish(String id) {
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(id).append(SEP);
-        sb.append(id.substring(id.lastIndexOf("/")+1, id.length())).append(SEP);
-
-        int i=0;
+        List<Object> record = new ArrayList<>();
+        record.add(id);
+        record.add(Paths.get(id).getFileName());
         for (Measure m : Measure.values()) {
-            if(!results.containsKey(m))
-                throw new RuntimeException("Measurement is missing "+m);
+            if (!results.containsKey(m)) {
+                throw new RuntimeException("Measurement is missing " + m);
+            }
 
             DescriptiveStatistics stats = results.get(m);
-            sb.append(stats.getN()).append(SEP);
-            sb.append(stats.getMin()).append(SEP);
-            sb.append(stats.getMax()).append(SEP);
-            sb.append(stats.getPercentile(75));
-
-            if(i<Measure.values().length-1)
-                sb.append(SEP);
-            i++;
+            record.add(stats.getN());
+            record.add(stats.getMin());
+            record.add(stats.getMax());
+            record.add(stats.getPercentile(75));
         }
-        sb.append(NEWLINE);
 
         try {
-            Files.write(Paths.get(file.getAbsolutePath()), sb.toString().getBytes(), StandardOpenOption.APPEND);
-        } catch (Exception e) {
+            csvOutput.printRecord(record);
+            csvOutput.flush();
+        } catch (IOException e) {
             throw new RuntimeException("Failed to write data", e);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        csvOutput.close();
     }
 
     public static final String SAMPLES = " Samples";
@@ -117,6 +102,5 @@ public class CSVCollector extends AbstractCollectorBase {
     public static int MEM_PERCENTILE_IDX = 9;
     public static int FILE_NAME_IDX = 1;
 
-    private final File file;
+    private final CSVPrinter csvOutput;
 }
-
