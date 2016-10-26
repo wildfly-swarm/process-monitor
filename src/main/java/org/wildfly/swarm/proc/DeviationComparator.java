@@ -30,17 +30,11 @@ public interface DeviationComparator {
 
     void compare(List<CSVRecord> previous, List<CSVRecord> current) throws ThresholdExceeded;
 
-    default CSVRecord findMatching(String seeked, List<CSVRecord> current) {
-        CSVRecord match = null;
-        for (CSVRecord record : current) {
-            String fileName = record.get(CSVCollector.FILE_NAME_IDX);
-            if(fileName.equals(seeked)) {
-                match = record;
-                break;
-            }
-
-        }
-        return match;
+    default CSVRecord findMatching(String fileName, List<CSVRecord> records) {
+        return records.stream()
+                .filter(r -> fileName.equals(r.get(CSVCollector.FILE_NAME_IDX)))
+                .findFirst()
+                .orElse(null);
     }
 
 }

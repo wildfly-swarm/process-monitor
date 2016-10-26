@@ -26,7 +26,7 @@ mvn clean package
 ## Execute the tests
 
 ```
-Usage: Monitor [-a <arg>] -b <arg> [-n <arg>] [-o <arg>] [-skip]
+usage: Monitor [-a <arg>] -b <arg> [-n <arg>] [-o <arg>] [-skip] -w <arg>
 WildFly Swarm Performance Monitor
  -a,--archive <arg>             the directory with previous performance
                                 results
@@ -34,7 +34,8 @@ WildFly Swarm Performance Monitor
  -n,--number-iterations <arg>   number of iterations per test
  -o,--output <arg>              the .csv file to store the current test
                                 results
- -skip,--skip-tests             skip test exection phase
+ -skip,--skip-tests             skip test execution phase
+ -w,--workdir <arg>             where to store testing artifacts
 ```
 
 Or simply use the run script (assumes sigar in $HOME):

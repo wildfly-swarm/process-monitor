@@ -19,19 +19,19 @@
 package org.wildfly.swarm.proc;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.cli.CommandLine;
@@ -39,7 +39,6 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVFormat;
@@ -54,6 +53,8 @@ import org.hyperic.sigar.ProcMem;
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.ptql.ProcessFinder;
 
+import static org.wildfly.swarm.proc.Units.bytesToMegabytes;
+
 /**
  * @author Heiko Braun
  * @since 28/04/16
@@ -63,6 +64,7 @@ public class Monitor {
     public Monitor(CommandLine cmd) {
 
         baseDir = new File(cmd.getOptionValue("b"));
+        workDir = new File(cmd.getOptionValue("w"));
         archiveDir = cmd.hasOption("a") ? Optional.of(new File(cmd.getOptionValue("a"))) : Optional.empty();
 
         outputFile = cmd.hasOption("o") ? Optional.of(new File(cmd.getOptionValue("o"))) : Optional.empty();
@@ -86,49 +88,52 @@ public class Monitor {
 
         Options options = new Options();
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("base")
-                        .isRequired(true)
-                        .withDescription("the WildFly Swarm examples directory")
-                        .hasArg()
-                        .create("b")
+        options.addOption(Option.builder("b")
+                .longOpt("base")
+                .required(true)
+                .desc("the WildFly Swarm examples directory")
+                .hasArg()
+                .build()
         );
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("archive")
-                        .isRequired(false)
-                        .withDescription("the directory with previous performance results")
-                        .hasArg()
-                        .create("a")
+        options.addOption(Option.builder("a")
+                .longOpt("archive")
+                .required(false)
+                .desc("the directory with previous performance results")
+                .hasArg()
+                .build()
         );
 
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("output")
-                        .isRequired(false)
-                        .withDescription("the .csv file to store the current test results")
-                        .hasArg()
-                        .create("o")
+        options.addOption(Option.builder("o")
+                .longOpt("output")
+                .required(false)
+                .desc("the .csv file to store the current test results")
+                .hasArg()
+                .build()
         );
 
-        options.addOption(
-                        OptionBuilder
-                                .withLongOpt("skip-tests")
-                                .isRequired(false)
-                                .withDescription("skip test exection phase")
-                                .create("skip")
-                );
+        options.addOption(Option.builder("skip")
+                .longOpt("skip-tests")
+                .required(false)
+                .desc("skip test execution phase")
+                .build()
+        );
 
-        options.addOption(
-                OptionBuilder
-                        .withLongOpt("number-iterations")
-                        .isRequired(false)
-                        .hasArg()
-                        .withDescription("number of iterations per test")
-                        .create("n")
+        options.addOption(Option.builder("n")
+                .longOpt("number-iterations")
+                .required(false)
+                .hasArg()
+                .desc("number of iterations per test")
+                .build()
+        );
+
+        options.addOption(Option.builder("w")
+                .longOpt("workdir")
+                .required(true)
+                .hasArg()
+                .desc("where to store testing artifacts")
+                .build()
         );
 
         CommandLineParser parser = new DefaultParser();
@@ -186,12 +191,13 @@ public class Monitor {
 
                 collector.onBegin(id);
                 for (int i = 0; i < NUM_ITERATIONS; i++) {
-                    runTest(file, httpCheck, collector);
+                    runTest(i, file, httpCheck, collector);
                 }
                 collector.onFinish(id);
             }
+            collector.close();
 
-            System.out.println("Test Execution Time: " + (System.currentTimeMillis() - total0));
+            System.out.println("Test Execution Time: " + (System.currentTimeMillis() - total0) + "ms");
 
         }
         else {
@@ -201,7 +207,7 @@ public class Monitor {
 
         // second phase: compare with previous, archived results
         if(outputFile.isPresent() && archiveDir.isPresent()) {
-            Optional<ArchivedResult> prev = getPreviousResults(this.archiveDir.get());
+            Optional<ArchivedResult> prev = getPreviousResults(outputFile.get().toPath(), this.archiveDir.get());
             if (prev.isPresent() && (collector instanceof CSVCollector)) { // limited to CSV files
                 checkDeviation(this.outputFile.get(), prev.get());
             } else {
@@ -219,146 +225,165 @@ public class Monitor {
         new FailFastComparator(10.00).compare(previous, current);
     }
 
-
     private CSVParser loadCSV(File file) throws Exception {
-        Reader in = new FileReader(file);
-        CSVParser parser = CSVFormat.DEFAULT.parse(in);
-        return parser;
+        Reader input = Files.newBufferedReader(file.toPath());
+        return CSVFormat.DEFAULT.parse(input);
     }
 
-    private Optional<ArchivedResult> getPreviousResults(File dir) {
-
-        String[] archivedResults = dir.list(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.endsWith(".csv");
-            }
-        });
-
-        Map<Version, File> versions = new HashMap<Version, File>();
-        for (String archivedResult : archivedResults) {
-            File archive = new File(dir, archivedResult);
-            String name = archive.getName();
-            Version v = Version.valueOf(name.substring(0, name.lastIndexOf(".")));
-            versions.put(v, archive);
+    private static boolean isSameFile(Path path1, Path path2) {
+        try {
+            return Files.isSameFile(path1, path2);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
+    }
 
-        Optional<ArchivedResult> res = Optional.empty();
-
-        if(versions.size()>0) {
-            List<Version> sortedKeys = new ArrayList<Version>(versions.keySet());
-            Collections.sort(sortedKeys, new Comparator<Version>() {
-                public int compare(Version v1, Version v2) {
-                    return v1.compareTo(v2);
-                }
-            });
-
-            sortedKeys.forEach( k -> System.out.println(k));
-
-            Version key = sortedKeys.get(sortedKeys.size() - 1);
-            res = Optional.of(
-                    new ArchivedResult(key, versions.get(key))
-            );
+    private Optional<ArchivedResult> getPreviousResults(Path currentOutput, File dir) throws IOException {
+        try (Stream<Path> stream = Files.walk(dir.toPath(), 1)) {
+            return stream
+                    .filter(path -> Files.isRegularFile(path))
+                    .filter(path -> path.getFileName().toString().endsWith(".csv"))
+                    .filter(path -> !isSameFile(currentOutput, path))
+                    .map(path -> {
+                        String fileName = path.getFileName().toString();
+                        Version version = Version.valueOf(fileName.substring(0, fileName.lastIndexOf(".")));
+                        return new ArchivedResult(version, path.toFile());
+                    })
+                    .sorted(Comparator.comparing(ArchivedResult::getVersion).reversed())
+                    .findFirst();
         }
-
-        return res;
     }
 
     /**
      * Main test execution. Spawns an external process
+     * @param iteration
      * @param file
      * @param httpCheck
      * @param collector
      */
-    private void runTest(File file, String httpCheck, final Collector collector) {
+    private void runTest(int iteration, File file, String httpCheck, final Collector collector) {
 
-        System.out.println("Testing "+file.getAbsolutePath());
+        System.out.println("Testing " + file.getAbsolutePath() + ", iteration " + iteration);
         String id = file.getAbsolutePath();
 
         String uid = UUID.randomUUID().toString();
-        ProcessBuilder pb = new ProcessBuilder("java", "-Duid="+ uid, "-Djava.io.tmpdir="+System.getProperty("java.io.tmpdir"), "-jar", file.getAbsolutePath()).inheritIO();
         Process process = null;
-        boolean escape = false;
         int attempts = 0;
 
         try {
+            Path workDir = Files.createDirectories(this.workDir.toPath().resolve(Paths.get(file.getName(), "iteration-" + iteration)));
+            Path tmp = Files.createDirectory(workDir.resolve("tmp"));
+
+            ProcessBuilder pb = new ProcessBuilder("java",
+                    "-Duid=" + uid,
+                    "-Djava.io.tmpdir=" + tmp.toAbsolutePath().toString(),
+                    "-jar", file.getAbsolutePath())
+                    .redirectOutput(workDir.resolve("stdout.txt").toFile())
+                    .redirectError(workDir.resolve("stderr.txt").toFile());
 
             final long s0 = System.currentTimeMillis();
             process = pb.start();
 
             final CloseableHttpClient httpClient = HttpClients.createDefault();
 
-            do {
+            while (true) {
+                if (attempts >= NUM_CONNECTION_ATTEMPTS) {
+                    System.out.println("Max attempts reached, escaping sequence");
+                    break;
+                }
 
+                CloseableHttpResponse response = null;
                 try {
-
                     HttpGet request = new HttpGet(httpCheck);
-
-                    CloseableHttpResponse response = httpClient.execute(request);
+                    response = httpClient.execute(request);
                     int statusCode = response.getStatusLine().getStatusCode();
-                    if(statusCode!=200) {
-                        new RuntimeException("Failed to execute HTTP check: " + statusCode).printStackTrace();
-                        escape = true;
+
+                    if (statusCode == 200) {
+                        collector.onMeasurement(id, Measure.STARTUP_TIME, (double) (System.currentTimeMillis() - s0));
+                        measureMemory(id, uid, collector);
+                        measureJarSize(id, file, collector);
+                        measureTmpDirSize(id, tmp, collector);
+                        break;
+                    } else if (statusCode == 404) {
+                        // this can happen during server boot, when the HTTP endpoint is already exposed
+                        // but the application is not yet deployed
+                    } else {
+                        System.err.println("Failed to execute HTTP check: " + statusCode);
+                        break;
                     }
-
-                    procInfo(id, uid, collector);
-
-                    collector.onMeasurement(id, Measure.STARTUP_TIME, new Double(System.currentTimeMillis()-s0));
-                    escape = true;
                 } catch (HttpHostConnectException e) {
-
-                    //System.err.println(e.getMessage());
-
-                    if(attempts < NUM_CONNECTION_ATTEMPTS) {
-                        System.err.println("Failed to connect. Scheduling retry ...");
-                        Thread.sleep(MS_BETWEEN_ATTEMPTS);
-                        attempts++;
-                    }
-                    else {
-                        System.out.println("Max attempts reached, escaping sequence");
-                        escape = true;
+                    // server not running yet
+                } finally {
+                    if (response != null) {
+                        response.close();
                     }
                 }
-            } while(!escape);
+
+                attempts++;
+                Thread.sleep(MS_BETWEEN_ATTEMPTS);
+            }
 
             httpClient.close();
-            process.destroy();
-            process.waitFor(2000, TimeUnit.MILLISECONDS);
 
+            final long s1 = System.currentTimeMillis();
+            process.destroy();
+            boolean finished = process.waitFor(2, TimeUnit.SECONDS);
+            if (finished) {
+                collector.onMeasurement(id, Measure.SHUTDOWN_TIME, (double) (System.currentTimeMillis() - s1));
+            }
         } catch (Throwable t) {
             t.printStackTrace();
-        }
-        finally {
-            if(process!=null && process.isAlive())
+        } finally {
+            if (process!=null && process.isAlive()) {
                 process.destroyForcibly();
+                try {
+                    process.waitFor(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
     }
 
-    /**
-     * See https://support.hyperic.com/display/SIGAR/PTQL
-     * @param process
-     * @param file
-     * @throws Exception
-     */
-    private void procInfo(String id, String uid, Collector collector) throws Exception {
+    private void measureMemory(String id, String uid, Collector collector) throws Exception {
+        // see https://support.hyperic.com/display/SIGAR/PTQL
         Sigar sigar = new Sigar();
         final ProcessFinder processFinder = new ProcessFinder(sigar);
         long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.1.ct="+uid);
 
         ProcMem procMem = sigar.getProcMem(pid);
-        String heapString = Sigar.formatSize(procMem.getResident());
-        System.out.println("PID for test driver: "+ pid);
-        System.out.println("MEM for PID: "+ heapString);
-        collector.onMeasurement(id, Measure.HEAP_AFTER_INVOCATION, Long.valueOf(heapString.substring(0, heapString.length()-1)));  // TODO only works for MB
+        long rss = procMem.getResident();
+        collector.onMeasurement(id, Measure.RSS_AFTER_INVOCATION, bytesToMegabytes(rss));
+
+        long javaHeap = Jstat.usedHeap(pid);
+        collector.onMeasurement(id, Measure.JAVA_HEAP_AFTER_INVOCATION, bytesToMegabytes(javaHeap));
     }
 
-    private static final int NUM_CONNECTION_ATTEMPTS = 200;
+    private void measureJarSize(String id, File jar, Collector collector) throws IOException {
+        long jarSize = jar.length();
+        collector.onMeasurement(id, Measure.JAR_SIZE, bytesToMegabytes(jarSize));
+    }
 
-    private static final int MS_BETWEEN_ATTEMPTS = 100;
+    private void measureTmpDirSize(String id, Path tmpDir, Collector collector) throws IOException {
+        try (Stream<Path> stream = Files.walk(tmpDir)) {
+            long tmpDirSize = stream
+                    .mapToLong(path -> path.toFile().length())
+                    .sum();
+
+            collector.onMeasurement(id, Measure.TMP_DIR_SIZE, bytesToMegabytes(tmpDirSize));
+        }
+    }
+
+    private static final int NUM_CONNECTION_ATTEMPTS = 1000;
+
+    private static final int MS_BETWEEN_ATTEMPTS = 20;
 
     private int NUM_ITERATIONS = 10;
 
     private final File baseDir;
+
+    private final File workDir;
 
     private final Optional<File> archiveDir;
 
@@ -369,7 +394,7 @@ public class Monitor {
     private boolean skipTests;
 
 
-    class ArchivedResult {
+    static class ArchivedResult {
         private Version version;
         private File file;
 
