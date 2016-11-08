@@ -69,6 +69,7 @@ public class Monitor {
         archiveDir = cmd.hasOption("a") ? Optional.of(new File(cmd.getOptionValue("a"))) : Optional.empty();
 
         outputFile = cmd.hasOption("o") ? Optional.of(new File(cmd.getOptionValue("o"))) : Optional.empty();
+        comparisonOutputFile = cmd.hasOption("c") ? Optional.of(new File(cmd.getOptionValue("c"))) : Optional.empty();
 
         System.out.println("Base dir: "+ baseDir.getAbsolutePath());
 
@@ -134,6 +135,14 @@ public class Monitor {
                 .required(true)
                 .hasArg()
                 .desc("where to store testing artifacts")
+                .build()
+        );
+
+        options.addOption(Option.builder("c")
+                .longOpt("comparison-csv")
+                .required(false)
+                .hasArg()
+                .desc("the .csv file to store the comparison")
                 .build()
         );
 
@@ -216,6 +225,12 @@ public class Monitor {
 
         List<CSVRecord> current = loadCSV(testResult).getRecords();
         List<CSVRecord> previous = loadCSV(archivedResult.getFile()).getRecords();
+
+        if (comparisonOutputFile.isPresent()) {
+            String previousName = archivedResult.getVersion().toString();
+            String currentName = testResult.getName().replaceFirst(".csv$", "");
+            new CsvOutputComparator(comparisonOutputFile.get(), previousName, currentName).compare(previous, current);
+        }
 
         new FailFastComparator(10.00).compare(previous, current);
     }
@@ -383,6 +398,8 @@ public class Monitor {
     private final Optional<File> archiveDir;
 
     private final Optional<File> outputFile;
+
+    private final Optional<File> comparisonOutputFile;
 
     private final Collector collector;
 
