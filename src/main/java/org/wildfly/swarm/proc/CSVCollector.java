@@ -47,7 +47,10 @@ public class CSVCollector extends AbstractCollectorBase {
             headerList.add(measure.getShortName() + SAMPLES);
             headerList.add(measure.getShortName() + MIN);
             headerList.add(measure.getShortName() + MAX);
-            headerList.add(measure.getShortName() + PERCENTILE);
+            headerList.add(measure.getShortName() + MEAN);
+            headerList.add(measure.getShortName() + STANDARD_DEVIATION);
+            headerList.add(measure.getShortName() + MEDIAN);
+            headerList.add(measure.getShortName() + PERCENTILE_75);
         }
         String[] header = headerList.toArray(new String[0]);
 
@@ -74,6 +77,9 @@ public class CSVCollector extends AbstractCollectorBase {
             record.add(stats.getN());
             record.add(stats.getMin());
             record.add(stats.getMax());
+            record.add(stats.getMean());
+            record.add(stats.getStandardDeviation());
+            record.add(stats.getPercentile(50));
             record.add(stats.getPercentile(75));
         }
 
@@ -96,10 +102,16 @@ public class CSVCollector extends AbstractCollectorBase {
 
     public static final String MAX = " Max";
 
-    public static final String PERCENTILE = " .75";
+    public static final String MEAN = " Mean";
 
-    public static int STARTUP_PERCENTILE_IDX = 5;
-    public static int MEM_PERCENTILE_IDX = 9;
+    public static final String STANDARD_DEVIATION = " Std Dev";
+
+    public static final String MEDIAN = " Median";
+
+    public static final String PERCENTILE_75 = " .75";
+
+    public static int STARTUP_PERCENTILE_IDX = 8;
+    public static int MEM_PERCENTILE_IDX = 15;
     public static int FILE_NAME_IDX = 1;
 
     private final CSVPrinter csvOutput;
