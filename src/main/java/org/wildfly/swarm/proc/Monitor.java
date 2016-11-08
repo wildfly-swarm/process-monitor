@@ -62,6 +62,7 @@ import static org.wildfly.swarm.proc.Units.bytesToMegabytes;
 public class Monitor {
 
     public Monitor(CommandLine cmd) {
+        skipTests = cmd.hasOption("skip");
 
         baseDir = new File(cmd.getOptionValue("b"));
         workDir = new File(cmd.getOptionValue("w"));
@@ -77,7 +78,7 @@ public class Monitor {
         if(archiveDir.isPresent() && !archiveDir.get().exists())
             throw new RuntimeException("Archive does not exist: "+archiveDir.get().getAbsolutePath());
 
-        collector = outputFile.isPresent() ?
+        collector = (outputFile.isPresent() && !skipTests) ?
                 new CSVCollector(outputFile.get()) : new SystemOutCollector();
 
 
@@ -153,15 +154,7 @@ public class Monitor {
         }
 
         // perform tests
-        new Monitor(cmd)
-                .skipTests(cmd.hasOption("skip"))
-                .run();
-
-    }
-
-    private Monitor skipTests(boolean b) {
-        this.skipTests = b;
-        return this;
+        new Monitor(cmd).run();
     }
 
     private static void usage(Options options) {
@@ -208,7 +201,9 @@ public class Monitor {
         // second phase: compare with previous, archived results
         if(outputFile.isPresent() && archiveDir.isPresent()) {
             Optional<ArchivedResult> prev = getPreviousResults(outputFile.get().toPath(), this.archiveDir.get());
-            if (prev.isPresent() && (collector instanceof CSVCollector)) { // limited to CSV files
+            if (prev.isPresent()) {
+                // maybe we should check here that outputFile is a valid CSV (in case we skipped the tests and are running
+                // against an already existing file), but if it isn't, things will fail down the line anyway
                 checkDeviation(this.outputFile.get(), prev.get());
             } else {
                 System.out.println("Performance comparison skipped.");
