@@ -48,14 +48,9 @@ public class FailFastComparator implements DeviationComparator {
 
     @Override
     public void compare(List<CSVRecord> previous, List<CSVRecord> current) throws ThresholdExceeded {
-        boolean skipedFirst = false;
         List<ComparisonResult> comparisonResults = new ArrayList<>();
         int maxChars = 0;
         for (CSVRecord prevRecord : previous) {
-            if(!skipedFirst) { // CSV headers
-                skipedFirst = true;
-                continue;
-            }
             String fileName = prevRecord.get(CSVCollector.FILE_NAME_IDX);
             if(fileName.length()>maxChars) maxChars = fileName.length();
             CSVRecord matching = findMatching(fileName, current);

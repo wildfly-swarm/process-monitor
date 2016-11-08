@@ -222,7 +222,7 @@ public class Monitor {
 
     private CSVParser loadCSV(File file) throws Exception {
         Reader input = Files.newBufferedReader(file.toPath());
-        return CSVFormat.DEFAULT.parse(input);
+        return CSVFormat.DEFAULT.withHeader().parse(input);
     }
 
     private static boolean isSameFile(Path path1, Path path2) {
