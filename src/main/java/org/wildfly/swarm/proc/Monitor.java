@@ -310,6 +310,7 @@ public class Monitor {
 
                     if (statusCode == 200) {
                         collector.onMeasurement(id, Measure.STARTUP_TIME, (double) (System.currentTimeMillis() - s0));
+                        warmup(httpClient, httpCheck);
                         measureMemory(id, uid, collector);
                         measureJarSize(id, file, collector);
                         measureTmpDirSize(id, tmp, collector);
@@ -356,11 +357,26 @@ public class Monitor {
 
     }
 
+    private void warmup(CloseableHttpClient httpClient, String httpCheck) throws IOException {
+        for (int i = 0; i < 100; i++) {
+            HttpGet request = new HttpGet(httpCheck);
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode != 200) {
+                    System.err.println("Failed to execute warmup: " + statusCode);
+                    return;
+                }
+            }
+        }
+    }
+
     private void measureMemory(String id, String uid, Collector collector) throws Exception {
         // see https://support.hyperic.com/display/SIGAR/PTQL
         Sigar sigar = new Sigar();
         final ProcessFinder processFinder = new ProcessFinder(sigar);
         long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.1.ct="+uid);
+
+        Jcmd.gc(pid);
 
         ProcMem procMem = sigar.getProcMem(pid);
         long rss = procMem.getResident();
