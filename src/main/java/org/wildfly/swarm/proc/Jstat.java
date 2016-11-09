@@ -10,11 +10,12 @@ import java.util.concurrent.TimeUnit;
 final class Jstat {
     private static final String[] RELEVANT_JSTAT_OUTPUT_COLUMNS = {
             "S0U", // used survivor space 0
-            "S1U", // used survivor space 1
+            "S1U", // used survivor space 1; note that one of S0U and S1U is always 0
             "EU",  // used eden space
             "OU",  // used old space
-            "MU",  // used metaspace
-            "CCSU" // used compressed class space
+            // common tools (jconsole, jvisualvm, jmc) report these as non-heap memory
+            //"MU",  // used metaspace
+            //"CCSU" // used compressed class space; note that it's actually part of metaspace, so computing MU + CCSU is wrong
     };
 
     /**
