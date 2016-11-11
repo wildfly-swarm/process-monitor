@@ -32,7 +32,7 @@ public interface DeviationComparator {
 
     default CSVRecord findMatching(String fileName, List<CSVRecord> records) {
         return records.stream()
-                .filter(r -> fileName.equals(r.get(CSVCollector.FILE_NAME_IDX)))
+                .filter(r -> fileName.equals(r.get(CSVCollector.SHORT_FILE_NAME_COLUMN)))
                 .findFirst()
                 .orElse(null);
     }

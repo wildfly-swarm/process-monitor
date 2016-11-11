@@ -41,16 +41,16 @@ public class CSVCollector extends AbstractCollectorBase {
         }
 
         List<String> headerList = new ArrayList<>();
-        headerList.add("File");
-        headerList.add("Name");
+        headerList.add(FULL_FILE_PATH_COLUMN);
+        headerList.add(SHORT_FILE_NAME_COLUMN);
         for (Measure measure : Measure.values()) {
-            headerList.add(measure.getShortName() + SAMPLES);
-            headerList.add(measure.getShortName() + MIN);
-            headerList.add(measure.getShortName() + MAX);
-            headerList.add(measure.getShortName() + MEAN);
-            headerList.add(measure.getShortName() + STANDARD_DEVIATION);
-            headerList.add(measure.getShortName() + MEDIAN);
-            headerList.add(measure.getShortName() + PERCENTILE_75);
+            headerList.add(measure.columnSamples());
+            headerList.add(measure.columnMin());
+            headerList.add(measure.columnMax());
+            headerList.add(measure.columnMean());
+            headerList.add(measure.columnStandardDeviation());
+            headerList.add(measure.columnMedian());
+            headerList.add(measure.column75Percentile());
         }
         String[] header = headerList.toArray(new String[0]);
 
@@ -96,23 +96,9 @@ public class CSVCollector extends AbstractCollectorBase {
         csvOutput.close();
     }
 
-    public static final String SAMPLES = " Samples";
+    public static final String FULL_FILE_PATH_COLUMN = "File";
 
-    public static final String MIN = " Min";
-
-    public static final String MAX = " Max";
-
-    public static final String MEAN = " Mean";
-
-    public static final String STANDARD_DEVIATION = " Std Dev";
-
-    public static final String MEDIAN = " Median";
-
-    public static final String PERCENTILE_75 = " .75";
-
-    public static int STARTUP_PERCENTILE_IDX = 8;
-    public static int MEM_PERCENTILE_IDX = 15;
-    public static int FILE_NAME_IDX = 1;
+    public static final String SHORT_FILE_NAME_COLUMN = "Name";
 
     private final CSVPrinter csvOutput;
 }
