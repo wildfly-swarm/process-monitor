@@ -21,9 +21,9 @@ package org.wildfly.swarm.proc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.csv.CSVRecord;
@@ -37,34 +37,28 @@ public class FailFastComparator implements DeviationComparator {
 
     private final double threshold;
 
-    private final Map<Measure, Integer> criteria = new HashMap<>();
+    private final Set<Measure> criteria = new HashSet<>();
 
     public FailFastComparator(double threshold) {
         this.threshold = threshold;
 
-        criteria.put(Measure.RSS_AFTER_INVOCATION, CSVCollector.MEM_PERCENTILE_IDX);
-        criteria.put(Measure.STARTUP_TIME, CSVCollector.STARTUP_PERCENTILE_IDX);
+        criteria.add(Measure.RSS_AFTER_INVOCATION);
+        criteria.add(Measure.STARTUP_TIME);
     }
 
     @Override
     public void compare(List<CSVRecord> previous, List<CSVRecord> current) throws ThresholdExceeded {
-        boolean skipedFirst = false;
         List<ComparisonResult> comparisonResults = new ArrayList<>();
         int maxChars = 0;
         for (CSVRecord prevRecord : previous) {
-            if(!skipedFirst) { // CSV headers
-                skipedFirst = true;
-                continue;
-            }
-            String fileName = prevRecord.get(CSVCollector.FILE_NAME_IDX);
+            String fileName = prevRecord.get(CSVCollector.SHORT_FILE_NAME_COLUMN);
             if(fileName.length()>maxChars) maxChars = fileName.length();
             CSVRecord matching = findMatching(fileName, current);
             if(matching!=null) {
 
-                for (Measure measure : criteria.keySet()) {
-                    int idx = criteria.get(measure);
-                    double prevVal = Double.valueOf(prevRecord.get(idx));
-                    double currVal = Double.valueOf(matching.get(idx));
+                for (Measure measure : criteria) {
+                    double prevVal = Double.valueOf(prevRecord.get(measure.column75Percentile()));
+                    double currVal = Double.valueOf(matching.get(measure.column75Percentile()));
 
                     if(currVal>prevVal) {
 

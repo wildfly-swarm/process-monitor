@@ -28,11 +28,11 @@ import org.apache.commons.csv.CSVRecord;
  */
 public interface DeviationComparator {
 
-    void compare(List<CSVRecord> previous, List<CSVRecord> current) throws ThresholdExceeded;
+    void compare(List<CSVRecord> previous, List<CSVRecord> current) throws Exception;
 
     default CSVRecord findMatching(String fileName, List<CSVRecord> records) {
         return records.stream()
-                .filter(r -> fileName.equals(r.get(CSVCollector.FILE_NAME_IDX)))
+                .filter(r -> fileName.equals(r.get(CSVCollector.SHORT_FILE_NAME_COLUMN)))
                 .findFirst()
                 .orElse(null);
     }

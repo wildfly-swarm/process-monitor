@@ -62,12 +62,14 @@ import static org.wildfly.swarm.proc.Units.bytesToMegabytes;
 public class Monitor {
 
     public Monitor(CommandLine cmd) {
+        skipTests = cmd.hasOption("skip");
 
         baseDir = new File(cmd.getOptionValue("b"));
         workDir = new File(cmd.getOptionValue("w"));
         archiveDir = cmd.hasOption("a") ? Optional.of(new File(cmd.getOptionValue("a"))) : Optional.empty();
 
         outputFile = cmd.hasOption("o") ? Optional.of(new File(cmd.getOptionValue("o"))) : Optional.empty();
+        comparisonOutputFile = cmd.hasOption("c") ? Optional.of(new File(cmd.getOptionValue("c"))) : Optional.empty();
 
         System.out.println("Base dir: "+ baseDir.getAbsolutePath());
 
@@ -77,7 +79,7 @@ public class Monitor {
         if(archiveDir.isPresent() && !archiveDir.get().exists())
             throw new RuntimeException("Archive does not exist: "+archiveDir.get().getAbsolutePath());
 
-        collector = outputFile.isPresent() ?
+        collector = (outputFile.isPresent() && !skipTests) ?
                 new CSVCollector(outputFile.get()) : new SystemOutCollector();
 
 
@@ -136,6 +138,14 @@ public class Monitor {
                 .build()
         );
 
+        options.addOption(Option.builder("c")
+                .longOpt("comparison-csv")
+                .required(false)
+                .hasArg()
+                .desc("the .csv file to store the comparison")
+                .build()
+        );
+
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         try {
@@ -153,15 +163,7 @@ public class Monitor {
         }
 
         // perform tests
-        new Monitor(cmd)
-                .skipTests(cmd.hasOption("skip"))
-                .run();
-
-    }
-
-    private Monitor skipTests(boolean b) {
-        this.skipTests = b;
-        return this;
+        new Monitor(cmd).run();
     }
 
     private static void usage(Options options) {
@@ -208,7 +210,9 @@ public class Monitor {
         // second phase: compare with previous, archived results
         if(outputFile.isPresent() && archiveDir.isPresent()) {
             Optional<ArchivedResult> prev = getPreviousResults(outputFile.get().toPath(), this.archiveDir.get());
-            if (prev.isPresent() && (collector instanceof CSVCollector)) { // limited to CSV files
+            if (prev.isPresent()) {
+                // maybe we should check here that outputFile is a valid CSV (in case we skipped the tests and are running
+                // against an already existing file), but if it isn't, things will fail down the line anyway
                 checkDeviation(this.outputFile.get(), prev.get());
             } else {
                 System.out.println("Performance comparison skipped.");
@@ -222,12 +226,18 @@ public class Monitor {
         List<CSVRecord> current = loadCSV(testResult).getRecords();
         List<CSVRecord> previous = loadCSV(archivedResult.getFile()).getRecords();
 
+        if (comparisonOutputFile.isPresent()) {
+            String previousName = archivedResult.getVersion().toString();
+            String currentName = testResult.getName().replaceFirst(".csv$", "");
+            new CsvOutputComparator(comparisonOutputFile.get(), previousName, currentName).compare(previous, current);
+        }
+
         new FailFastComparator(10.00).compare(previous, current);
     }
 
     private CSVParser loadCSV(File file) throws Exception {
         Reader input = Files.newBufferedReader(file.toPath());
-        return CSVFormat.DEFAULT.parse(input);
+        return CSVFormat.DEFAULT.withHeader().parse(input);
     }
 
     private static boolean isSameFile(Path path1, Path path2) {
@@ -300,6 +310,7 @@ public class Monitor {
 
                     if (statusCode == 200) {
                         collector.onMeasurement(id, Measure.STARTUP_TIME, (double) (System.currentTimeMillis() - s0));
+                        warmup(httpClient, httpCheck);
                         measureMemory(id, uid, collector);
                         measureJarSize(id, file, collector);
                         measureTmpDirSize(id, tmp, collector);
@@ -346,11 +357,26 @@ public class Monitor {
 
     }
 
+    private void warmup(CloseableHttpClient httpClient, String httpCheck) throws IOException {
+        for (int i = 0; i < 100; i++) {
+            HttpGet request = new HttpGet(httpCheck);
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode != 200) {
+                    System.err.println("Failed to execute warmup: " + statusCode);
+                    return;
+                }
+            }
+        }
+    }
+
     private void measureMemory(String id, String uid, Collector collector) throws Exception {
         // see https://support.hyperic.com/display/SIGAR/PTQL
         Sigar sigar = new Sigar();
         final ProcessFinder processFinder = new ProcessFinder(sigar);
         long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.1.ct="+uid);
+
+        Jcmd.gc(pid);
 
         ProcMem procMem = sigar.getProcMem(pid);
         long rss = procMem.getResident();
@@ -388,6 +414,8 @@ public class Monitor {
     private final Optional<File> archiveDir;
 
     private final Optional<File> outputFile;
+
+    private final Optional<File> comparisonOutputFile;
 
     private final Collector collector;
 

@@ -40,5 +40,33 @@ public enum Measure {
         return shortName;
     }
 
+    public String columnSamples() {
+        return shortName + " Samples";
+    }
+
+    public String columnMin() {
+        return shortName + " Min";
+    }
+
+    public String columnMax() {
+        return shortName + " Max";
+    }
+
+    public String columnMean() {
+        return shortName + " Mean";
+    }
+
+    public String columnStandardDeviation() {
+        return shortName + " Std Dev";
+    }
+
+    public String columnMedian() {
+        return shortName + " Median";
+    }
+
+    public String column75Percentile() {
+        return shortName + " .75";
+    }
+
     private final String shortName;
 }
