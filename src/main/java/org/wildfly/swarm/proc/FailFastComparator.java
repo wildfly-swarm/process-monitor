@@ -92,7 +92,7 @@ public class FailFastComparator implements DeviationComparator {
         comparisonResults.forEach(r -> System.out.println(StringUtils.rightPad(r.getFile(), pad)+": "+r.getMessage()));
 
         // decide if ThresholdExceeded
-        List<ComparisonResult> failedTests = comparisonResults.stream().filter(r -> !r.isFailure()).collect(Collectors.toList());
+        List<ComparisonResult> failedTests = comparisonResults.stream().filter(r -> r.isFailure()).collect(Collectors.toList());
         if(failedTests.size()>0) {
             System.err.println("There have been test errors. See previous logs for details ...");
             throw new ThresholdExceeded(failedTests.size() + " test(s) did exceed the "+this.threshold+"% tolerance.");
