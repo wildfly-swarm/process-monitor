@@ -392,7 +392,9 @@ public class Monitor {
         final ProcessFinder processFinder = new ProcessFinder(sigar);
         long pid = processFinder.findSingleProcess("State.Name.eq=java,Args.1.ct="+uid);
 
-        Jcmd.gc(pid);
+        for (int i = 0; i < 10; i++) {
+            Jcmd.gc(pid);
+        }
 
         ProcMem procMem = sigar.getProcMem(pid);
         long rss = procMem.getResident();
