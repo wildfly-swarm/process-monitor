@@ -25,6 +25,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -180,10 +183,14 @@ public class Monitor {
             Properties props = new Properties();
             props.load(Monitor.class.getClassLoader().getResourceAsStream("swarm-apps.properties"));
 
+            Properties argsProps = new Properties();
+            argsProps.load(Monitor.class.getClassLoader().getResourceAsStream("swarm-app-args.properties"));
+
             // first phase: main test execution loop
             for (Object o : props.keySet()) {
                 String swarmFile = (String) o;
                 String httpCheck = (String) props.get(o);
+                String swarmArgs = (String) argsProps.get(o);
 
                 File file = new File(this.baseDir, swarmFile);
                 String id = file.getAbsolutePath();
@@ -191,9 +198,13 @@ public class Monitor {
                 if (!file.exists())
                     throw new RuntimeException("File does not exist: " + file.getAbsolutePath());
 
+                List<String> argsList = swarmArgs == null
+                        ? Collections.emptyList()
+                        : Arrays.asList(swarmArgs.split("\\s+"));
+
                 collector.onBegin(id);
                 for (int i = 0; i < NUM_ITERATIONS; i++) {
-                    runTest(i, file, httpCheck, collector);
+                    runTest(i, file, httpCheck, argsList, collector);
                 }
                 collector.onFinish(id);
             }
@@ -269,9 +280,10 @@ public class Monitor {
      * @param iteration
      * @param file
      * @param httpCheck
+     * @param processArgs
      * @param collector
      */
-    private void runTest(int iteration, File file, String httpCheck, final Collector collector) {
+    private void runTest(int iteration, File file, String httpCheck, List<String> processArgs, final Collector collector) {
 
         System.out.println("Testing " + file.getAbsolutePath() + ", iteration " + iteration);
         String id = file.getAbsolutePath();
@@ -284,10 +296,14 @@ public class Monitor {
             Path workDir = Files.createDirectories(this.workDir.toPath().resolve(Paths.get(file.getName(), "iteration-" + iteration)));
             Path tmp = Files.createDirectory(workDir.resolve("tmp"));
 
-            ProcessBuilder pb = new ProcessBuilder("java",
-                    "-Duid=" + uid,
-                    "-Djava.io.tmpdir=" + tmp.toAbsolutePath().toString(),
-                    "-jar", file.getAbsolutePath())
+            List<String> command = new ArrayList<>();
+            command.addAll(Arrays.asList("java",
+                                         "-Duid=" + uid,
+                                         "-Djava.io.tmpdir=" + tmp.toAbsolutePath().toString(),
+                                         "-jar", file.getAbsolutePath())
+            );
+            command.addAll(processArgs);
+            ProcessBuilder pb = new ProcessBuilder(command)
                     .redirectOutput(workDir.resolve("stdout.txt").toFile())
                     .redirectError(workDir.resolve("stderr.txt").toFile());
 
