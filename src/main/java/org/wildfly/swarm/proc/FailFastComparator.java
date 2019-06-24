@@ -44,6 +44,7 @@ public class FailFastComparator implements DeviationComparator {
 
         criteria.add(Measure.RSS_AFTER_INVOCATION);
         criteria.add(Measure.STARTUP_TIME);
+        criteria.add(Measure.JAR_SIZE);
     }
 
     @Override
